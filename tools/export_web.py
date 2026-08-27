@@ -21,7 +21,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import png  # noqa: E402
-from ph_dump import block0, blocks, palette  # noqa: E402
+from ph_dump import blocks, layers, palette  # noqa: E402
 from gen_catalog import MANIFEST  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -50,54 +50,63 @@ def tile_sheet_png(data, b, pal, out):
                 src = base + t * 64 + y * 8
                 band[y][cx * 8:cx * 8 + 8] = data[src:src + 8]
         rows.extend(bytes(r) for r in band)
-    png.write_indexed(out, W, H, rows, full)
+    # index 0 is the transparent colour for masked cells (blit_cell_mode0)
+    png.write_indexed(out, W, H, rows, full, transparent_index=0)
     return W, H, n
 
 
-def export(n, index):
+def export_layer(data, n, li, blk_index, b):
+    pal = palette(data, b)
+    stem = f"level{n:02d}_l{li}"
+    sheet_w, sheet_h, ntiles = tile_sheet_png(data, b, pal, DATA / f"{stem}.png")
+    cells = data[b["map_off"]:b["map_off"] + b["map_bytes"]]
+    (DATA / f"{stem}.bin").write_bytes(cells)
+    flags = {}
+    for i in range(0, len(cells), 2):
+        v, = struct.unpack_from("<H", cells, i)
+        k = "%X" % (v >> 12)
+        flags[k] = flags.get(k, 0) + 1
+    return {
+        "block": blk_index,
+        "cell_w": b["cell_w"], "cell_h": b["cell_h"],
+        "px_w": b["cell_w"] * 8, "px_h": b["cell_h"] * 8,
+        "tile_count": ntiles,
+        "sheet": f"{stem}.png", "sheet_w": sheet_w, "sheet_h": sheet_h,
+        "cells": f"{stem}.bin",
+        "palette": ["#%02x%02x%02x" % c for c in pal],
+        "flags": dict(sorted(flags.items())),
+    }
+
+
+def export(n):
     p = GAME / f"LEVEL{n:02d}.PH"
     if not p.exists():
         return None
     data = p.read_bytes()
-    b = block0(data)
+    ls = layers(data)
     entry = {
         "n": n,
         "bg": MANIFEST[n][0],
         "parallax": MANIFEST[n][1],
         "blocks": sum(1 for _ in blocks(data)),
     }
-    if not b["cell_w"]:
+    if not ls:
         entry["empty"] = True
         return entry
 
-    pal = palette(data, b)
     DATA.mkdir(parents=True, exist_ok=True)
-    sheet_w, sheet_h, ntiles = tile_sheet_png(
-        data, b, pal, DATA / f"level{n:02d}.png")
-
-    cw, ch = b["cell_w"], b["cell_h"]
-    cells = data[b["map_off"]:b["map_off"] + b["map_bytes"]]
-    (DATA / f"level{n:02d}.bin").write_bytes(cells)
-
-    # flag-nibble histogram, useful for the debug overlay
-    flags = {}
-    for i in range(0, len(cells), 2):
-        v, = struct.unpack_from("<H", cells, i)
-        k = "%X" % (v >> 12)
-        flags[k] = flags.get(k, 0) + 1
-
+    main_b = ls[0][1]
+    cw, ch = main_b["cell_w"], main_b["cell_h"]
     entry.update({
         "cell_w": cw, "cell_h": ch,
         "px_w": cw * 8, "px_h": ch * 8,
         "tiles_w": cw // 2, "tiles_h": ch // 2,
         "scroll_max_x": (cw // 2 - 20) * 16,
         "scroll_max_y": (ch // 2 - 14) * 16,
-        "tile_count": ntiles,
-        "sheet": f"level{n:02d}.png",
-        "sheet_w": sheet_w, "sheet_h": sheet_h,
-        "cells": f"level{n:02d}.bin",
-        "palette": ["#%02x%02x%02x" % c for c in pal],
-        "flags": dict(sorted(flags.items())),
+        # layer 0 is the main background; layer 1 (when present) is the
+        # parallax named in g_level_assets, drawn behind it.
+        "layers": [export_layer(data, n, li, bi, b)
+                   for li, (bi, b) in enumerate(ls)],
     })
     return entry
 
@@ -110,14 +119,17 @@ def main():
     targets = [args.level] if args.level is not None else range(25)
     levels = []
     for n in targets:
-        e = export(n, len(levels))
+        e = export(n)
         if e:
             levels.append(e)
             if e.get("empty"):
-                print(f"  level{n:02d}  empty header, metadata only")
+                print(f"  level{n:02d}  no layer blocks, metadata only")
             else:
-                print(f"  level{n:02d}  {e['bg']:<13} {e['px_w']}x{e['px_h']}px  "
-                      f"{e['tile_count']} tiles  {len(e['palette'])} colors")
+                desc = "  ".join(
+                    f"L{i}(blk{L['block']}) {L['px_w']}x{L['px_h']} "
+                    f"{L['tile_count']}t/{len(L['palette'])}c"
+                    for i, L in enumerate(e["layers"]))
+                print(f"  level{n:02d}  {e['bg']:<13} {desc}")
 
     DATA.mkdir(parents=True, exist_ok=True)
     meta = DATA / "levels.json"
@@ -131,6 +143,12 @@ def main():
         "game": "Pitfall: The Mayan Adventure",
         "screen": {"w": 320, "h": 224},
         "tile": 16, "cell": 8,
+        "cell_bits": {
+            "index": "0-11 tile index",
+            "12": "set = opaque blit; clear = masked blit, palette index 0 transparent",
+            "13-14": "either set routes to blit_cell_mode2 (0x00436BD8), not yet read",
+            "15": "never tested while drawing; meaning unresolved",
+        },
         "levels": levels,
     }, indent=1))
     total = sum(f.stat().st_size for f in DATA.iterdir())

@@ -196,6 +196,13 @@ the "bit 12 = opacity" experiment deleted the walls: those cells are still
 drawn, just by another routine. `blit_cell_mode0` and `blit_cell_mode2` have
 not been read yet.
 
+`blit_cell_mode0` (0x00436DF4) is the **masked** blit: `and ebx,0xFFF; je ret`
+returns immediately on tile index 0, then each pixel byte is written only if
+non-zero (`test al,al; je skip; mov [edi],al`). So **palette index 0 is the
+transparent colour**, and a masked cell lets whatever was drawn earlier show
+through. This is what the rejected opacity experiment got wrong: those cells
+are drawn, just masked, so skipping them deleted the walls.
+
 Bit 15's meaning is **still open**. It is the obvious collision candidate, but
 the web port's overlay rules out the simple reading: on `LEVEL13` it covers
 exactly the walls and floor, while on `LEVEL00` it marks one tree trunk and
@@ -216,6 +223,29 @@ by the cellmap is exactly `tile_count − 1`:
 | LEVEL14 | — | — | — | — | — | — (zero header) |
 
 (Full table: `python3 tools/check_ph.py`.)
+
+#### Layer blocks (VERIFIED)
+
+Blocks other than block 0 can carry the **same layer layout**. `tools/ph_dump.py`
+detects them structurally (`pix_off == 0x20 + cell_w*cell_h*2`, palette exactly
+`pal_count*3` bytes at the end). Across the 24 non-empty levels there are 46
+layer blocks:
+
+- **Block 0** is always the main background.
+- **The second layer block is the parallax** named in `g_level_assets`. Proof by
+  cross-level sharing: a 64x40 / 570-tile block appears in exactly the four
+  levels whose manifest names `clouds.bg`; a 98x64 / 136-tile block in exactly
+  the three naming `waterlax.bg`; a 64x32 / 343-tile block in the two naming
+  `mine_lax.bg`. The four levels with **no** parallax name (`temple1`, `temple3`,
+  `map1`, `gene2600`) have exactly **one** layer block.
+- On gameplay levels the parallax sits at **block 5** (blocks 1-4 are the
+  non-layer `.det` / `.dt2` / `.trg` / `.als` payloads); on the special screens,
+  which have no such assets, it is block 1.
+- Further layer blocks (levels 15 and 22) are sparse **foreground detail** —
+  vines and grass with mostly transparent cells.
+
+Blocks whose payload begins with **`0x34561234`** are sprite banks — the same
+magic that opens `INIT.PH`. Levels 15's blocks 3-5 are of this kind.
 
 #### `g_level_assets` — per-level manifest (VERIFIED)
 
@@ -380,10 +410,16 @@ remaining work, in dependency order:
 - [ ] Read `blit_cell_mode0` (0x00436DF4) and `blit_cell_mode2` (0x00436BD8) —
       almost certainly the transparent/masked variants, needed for correct
       layering in the port
-- [ ] Decode the `.det` / `.dt2` detail-layer blocks and draw them over the
-      background — several levels look sparse without them
-- [ ] Decode the parallax layer (`for_par.bg`, `clouds.bg`, …) and scroll it at
-      its own rate; the black regions in `forest1` are where it belongs
+- [ ] Find the per-layer **scroll rate**. All layers currently use the same
+      camera; `draw_background` reads a second camera pair (0x0046FBA8 /
+      0x0046FBAC) on some paths, which is probably it.
+- [ ] Confirm the layer **draw order** against `draw_background`'s two callers.
+      The port infers parallax-behind / detail-in-front from the data.
+- [ ] Read `blit_cell_mode2` (0x00436BD8) — the bits 13-14 variant, currently
+      treated as masked
+- [ ] **Web port performance**: compositing whole levels up front costs 2.8s for
+      `forest1` on mobile. Blit only the visible 41x29 cells per frame, the way
+      `draw_background` does, instead of pre-flattening the level.
 - [ ] Decode the `.als` sprite blocks; render Harry and the entities
 - [ ] Extract the movement constants (walk/run speed, jump impulse, gravity)
       from the physics code

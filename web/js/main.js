@@ -79,10 +79,13 @@ async function select(n) {
     state.level = lv;
     state.camX = state.camY = 0;
     ui.status.textContent = '';
+    const stack = lv.layers.map((L, i) =>
+      `L${i} blk${L.block} ${L.px_w}×${L.px_h} ${L.tile_count}t/${L.palette.length}c`
+    ).join(' · ');
     ui.info.innerHTML =
       `<b>${lv.bg}</b> · ${lv.px_w}×${lv.px_h}px · ${lv.tiles_w}×${lv.tiles_h} tiles · ` +
-      `${lv.tile_count} tiles · ${lv.palette.length} colors · ` +
       `parallax <b>${lv.parallax || '—'}</b> · ${lv.blocks} blocks · ` +
+      `${lv.layers.length} layer${lv.layers.length > 1 ? 's' : ''} (${stack}) · ` +
       `composited in ${lv.loadMs}ms`;
     location.hash = `#${n}`;
   } catch (err) {
@@ -104,13 +107,27 @@ function update(dt) {
   state.camY = Math.max(0, Math.min(lv.scroll_max_y, state.camY));
 }
 
+// The cellmap wraps horizontally (draw_background resets the column index at
+// g_cell_w), so a layer smaller than the level repeats rather than running out.
+// The per-layer scroll rate is still unknown, so every layer uses the same
+// camera for now; layers the same size as layer 0 are correct either way.
+function drawLayer(L, ox, oy) {
+  const W = L.px_w, H = L.px_h;
+  for (let dy = -(oy % H); dy < SCREEN_H; dy += H) {
+    for (let dx = -(ox % W); dx < SCREEN_W; dx += W) {
+      ctx.drawImage(L.canvas, dx, dy);
+    }
+  }
+}
+
 function drawFlags(lv, ox, oy) {
-  const c0 = ox >> 3, c1 = Math.min(lv.cell_w - 1, (ox + SCREEN_W) >> 3);
-  const r0 = oy >> 3, r1 = Math.min(lv.cell_h - 1, (oy + SCREEN_H) >> 3);
+  const L = lv.layers[0];
+  const c0 = ox >> 3, c1 = Math.min(L.cell_w - 1, (ox + SCREEN_W) >> 3);
+  const r0 = oy >> 3, r1 = Math.min(L.cell_h - 1, (oy + SCREEN_H) >> 3);
   ctx.globalAlpha = 0.55;
   for (let cy = r0; cy <= r1; cy++) {
     for (let cx = c0; cx <= c1; cx++) {
-      const nib = lv.cells[cy * lv.cell_w + cx] >> 12;
+      const nib = L.cells[cy * L.cell_w + cx] >> 12;
       const col = FLAG_COLORS[nib];
       if (!col) continue;
       ctx.fillStyle = col;
@@ -126,13 +143,14 @@ function drawFlags(lv, ox, oy) {
 // misses obvious platforms, so it is not the whole collision map. Overlay kept
 // as an investigation aid. See REVERSE.md.
 function drawSolid(lv, ox, oy) {
-  const c0 = ox >> 3, c1 = Math.min(lv.cell_w - 1, (ox + SCREEN_W) >> 3);
-  const r0 = oy >> 3, r1 = Math.min(lv.cell_h - 1, (oy + SCREEN_H) >> 3);
+  const L = lv.layers[0];
+  const c0 = ox >> 3, c1 = Math.min(L.cell_w - 1, (ox + SCREEN_W) >> 3);
+  const r0 = oy >> 3, r1 = Math.min(L.cell_h - 1, (oy + SCREEN_H) >> 3);
   ctx.globalAlpha = 0.45;
   ctx.fillStyle = '#ff2d55';
   for (let cy = r0; cy <= r1; cy++) {
     for (let cx = c0; cx <= c1; cx++) {
-      if (lv.cells[cy * lv.cell_w + cx] & 0x8000) {
+      if (L.cells[cy * L.cell_w + cx] & 0x8000) {
         ctx.fillRect(cx * 8 - ox, cy * 8 - oy, 8, 8);
       }
     }
@@ -159,7 +177,7 @@ function render() {
   ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
   if (!lv) return;
   const ox = Math.round(state.camX), oy = Math.round(state.camY);
-  ctx.drawImage(lv.canvas, ox, oy, SCREEN_W, SCREEN_H, 0, 0, SCREEN_W, SCREEN_H);
+  for (const L of lv.order) drawLayer(L, ox, oy);
   if (ui.solid.checked) drawSolid(lv, ox, oy);
   if (ui.flags.checked) drawFlags(lv, ox, oy);
   if (ui.grid.checked) drawGrid(ox, oy);

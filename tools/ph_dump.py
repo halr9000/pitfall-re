@@ -55,6 +55,36 @@ def block0(data):
                 pix_bytes=pal - pix, raw=(cw, ch, pix, pal, ncol))
 
 
+def is_layer(data, off, size):
+    """True if a block payload uses the block-0 layer layout."""
+    if size < 0x18:
+        return False
+    cw, ch, pix, pal, ncol = struct.unpack_from("<5I", data, off)
+    return bool(cw and ch and cw < 4096 and ch < 4096
+                and pix == 0x20 + cw * ch * 2
+                and pix < pal <= size
+                and (pal - pix) % 64 == 0
+                and size - pal == ncol * 3)
+
+
+def layer(data, off, size):
+    """Decode one layer block payload into the same dict shape as block0()."""
+    cw, ch, pix, pal, ncol = struct.unpack_from("<5I", data, off)
+    return dict(off=off, size=size, cell_w=cw, cell_h=ch,
+                map_off=off + 0x14, map_bytes=cw * ch * 2,
+                pix_off=off + pix, pal_off=off + pal, pal_count=ncol,
+                pix_bytes=pal - pix, raw=(cw, ch, pix, pal, ncol))
+
+
+def layers(data):
+    """Every block that is a drawable layer, in file order (block 0 first)."""
+    out = []
+    for i, _hoff, poff, size in blocks(data):
+        if is_layer(data, poff, size):
+            out.append((i, layer(data, poff, size)))
+    return out
+
+
 def palette(data, b0):
     p = b0["pal_off"]
     return [tuple(data[p + i * 3: p + i * 3 + 3]) for i in range(b0["pal_count"])]
