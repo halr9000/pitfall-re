@@ -156,10 +156,22 @@ follow the cellmap before the tile sheet.
 | 0–11 | tile index into the 8×8 tile sheet |
 | 12–15 | flag nibble — collision / behaviour class |
 
-Observed flag nibbles: `0` (by far the most common — plain background), and
-`8, 9, B, C, D, F` on the solid/interactive cells. On `LEVEL13` the
-distribution is `0:3858 8:40 9:60 B:22 C:45 D:63 F:8` over 4096 cells. The
-exact meaning of each nibble is **not yet determined**.
+All 16 nibble values occur across the 24 playable levels. The meaning is
+**not yet determined**, but the web port's flag overlay (`web/index.html`,
+"flag nibbles") makes the spatial pattern legible, and it is strongly
+structured rather than noise:
+
+- On `LEVEL13`, **vertical walls carry 8 and 9** in vertical runs, while the
+  **horizontal floor strip carries B, D and F**. Nibble 0 is everything else.
+- Levels whose `g_level_assets` entry has **no parallax name** (`temple1`,
+  `map1`, `temple3`) have **bit 0 set on every single cell**; levels with a
+  parallax layer have thousands of cells at 0.
+- `LEVEL21` (the vine intro, one screen tall) is 1785 cells of nibble 0 and
+  7 of nibble 1.
+
+The wall-vs-floor split reads like a surface-type or collision-direction
+encoding rather than a simple solidity bit. An opacity reading of bit 0 was
+tested and rejected — see `dead_ends.md`.
 
 **Verification** — `tools/check_ph.py` confirms for every level file that the
 tile sheet is a whole number of 64-byte tiles and that the highest index used
@@ -234,8 +246,14 @@ consecutive callers 0x0043BA16…0x0043BE3C each set up a different level index.
 | `gfx/<level>_palette.png` | palette swatches |
 | `gfx/<level>_pixels_WxH.png` | raw tile-sheet bytes as a linear image |
 
-All are regenerated from `game/` by `tools/render_level.py` and
-`tools/ph_dump.py --png`; nothing under `gfx/` or `game/` is committed.
+| `web/data/levelNN.png` | 8x8 tile sheet for the web port, 32 tiles per row |
+| `web/data/levelNN.bin` | raw cellmap for the web port, `cell_w * cell_h` uint16 |
+| `web/data/levels.json` | per-level metadata for the web port |
+
+`gfx/` is regenerated from `game/` by `tools/render_level.py` and
+`tools/ph_dump.py --png`, and neither it nor `game/` is committed. `web/data/`
+is produced by `tools/export_web.py` and **is** committed, because GitHub Pages
+has to serve it.
 
 ---
 
@@ -252,6 +270,8 @@ All are regenerated from `game/` by `tools/render_level.py` and
       zero unaccounted bytes and `max cell index == tile count − 1` everywhere
 - [ ] Ph6: full game session played, no major logic gaps found
 - [ ] Ph7: web port pixel-compared against the original
+      (stage 1 done: backgrounds composite and scroll in-browser at 320x224,
+      verified in headless Chromium; no player or physics yet)
 
 ---
 
@@ -290,9 +310,22 @@ All are regenerated from `game/` by `tools/render_level.py` and
 - [ ] Label the 482 call targets that matter: start with the ones reachable from
       `WinMainCRTStartup` and from the window procedure
 
-### Web Port Fixes
+### Web Port — road to a playable build
 
-*(none yet — no web port started)*
+Stage 1 (background renderer + asset pipeline + Pages deploy) is done. The
+remaining work, in dependency order:
+
+- [ ] **Collision.** Resolve the cellmap flag nibble by finding the code that
+      reads it, then add `web/js/physics.js`. Blocks everything else.
+- [ ] Decode the `.det` / `.dt2` detail-layer blocks and draw them over the
+      background — several levels look sparse without them
+- [ ] Decode the parallax layer (`for_par.bg`, `clouds.bg`, …) and scroll it at
+      its own rate; the black regions in `forest1` are where it belongs
+- [ ] Decode the `.als` sprite blocks; render Harry and the entities
+- [ ] Extract the movement constants (walk/run speed, jump impulse, gravity)
+      from the physics code
+- [ ] Decode the `.trg` trigger blocks — level transitions, hazards, pickups
+- [ ] Wire the state machine from `load_level`'s 16 callers so levels connect
 
 ### Documentation
 

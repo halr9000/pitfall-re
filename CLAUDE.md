@@ -54,6 +54,8 @@ precisely so `pypng` is not needed).
 | `check_ph.py` | validates the block-0 model against all 26 `.PH` files |
 | `render_level.py` | composites cellmap + tiles + palette into `gfx/*.png` |
 | `png.py` | minimal stdlib PNG writer (library) |
+| `export_web.py` | writes the `web/data/` asset bundle for the browser port |
+| `gen_catalog.py` | writes `web/catalog_data.json` for the asset browser |
 
 ## Working rules
 

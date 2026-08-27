@@ -31,7 +31,7 @@ def tile_sheet(data, b):
             for t in range(n)]
 
 
-def render_map(path, show_flags=False):
+def render_map(path, show_flags=False, alpha=False):
     data = path.read_bytes()
     b = block0(data)
     if not b["cell_w"]:
@@ -44,6 +44,7 @@ def render_map(path, show_flags=False):
 
     # palette: level colours 0..n-1, then flag-overlay colours at 240+
     full = list(pal) + [(0, 0, 0)] * (256 - len(pal))
+    full[255] = (255, 0, 255)   # transparent slot when --alpha
     flag_colors = {8: (255, 0, 0), 9: (255, 128, 0), 0xB: (255, 255, 0),
                    0xC: (0, 255, 255), 0xD: (0, 128, 255), 0xF: (255, 0, 255)}
     for i, (k, c) in enumerate(sorted(flag_colors.items())):
@@ -52,10 +53,13 @@ def render_map(path, show_flags=False):
 
     rows = []
     for cy in range(ch):
-        band = [bytearray(W) for _ in range(8)]
+        fill = 255 if alpha else 0
+        band = [bytearray([fill]) * W for _ in range(8)]
         for cx in range(cw):
             v, = struct.unpack_from("<H", data, b["map_off"] + (cy * cw + cx) * 2)
             idx, fl = v & 0xFFF, v >> 12
+            if alpha and not (fl & 1):
+                continue          # bit 0 clear -> cell is transparent
             if idx < len(tiles):
                 t = tiles[idx]
                 for y in range(8):
@@ -67,8 +71,10 @@ def render_map(path, show_flags=False):
         rows.extend(bytes(r) for r in band)
 
     GFX.mkdir(exist_ok=True)
-    out = GFX / f"{path.stem.lower()}_map{'_flags' if show_flags else ''}.png"
-    png.write_indexed(out, W, H, rows, full)
+    suffix = "_flags" if show_flags else ("_alpha" if alpha else "")
+    out = GFX / f"{path.stem.lower()}_map{suffix}.png"
+    png.write_indexed(out, W, H, rows, full,
+                      transparent_index=255 if alpha else None)
     print(f"  {out.relative_to(ROOT)}  {W}x{H}  {len(tiles)} tiles  {len(pal)} colors")
 
 
@@ -107,6 +113,8 @@ def main():
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--tiles", action="store_true")
     ap.add_argument("--flags", action="store_true")
+    ap.add_argument("--alpha", action="store_true",
+                    help="treat cellmap flag bit 0 as an opacity bit")
     args = ap.parse_args()
 
     targets = sorted(GAME.glob("LEVEL*.PH")) if args.all else None
@@ -119,7 +127,7 @@ def main():
         if args.tiles:
             render_tiles(p)
         else:
-            render_map(p, args.flags)
+            render_map(p, args.flags, args.alpha)
     return 0
 
 

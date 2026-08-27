@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pitfall: The Mayan Adventure — web port</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%2314110d'/%3E%3Cpath d='M3 11h10v2H3z' fill='%23d8a13c'/%3E%3Cpath d='M7 4h2v7H7z' fill='%2334c759'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #14110d; --panel: #1e1a14; --line: #3a3227;
+    --fg: #e8ddc8; --dim: #9c8f77; --accent: #d8a13c;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+         font: 13px/1.55 ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  header { padding: 16px 20px 12px; border-bottom: 1px solid var(--line); }
+  h1 { margin: 0; font-size: 16px; color: var(--accent); font-weight: 600; }
+  header p { margin: 4px 0 0; color: var(--dim); }
+  header a { color: var(--accent); }
+  main { padding: 18px 20px 60px; max-width: 1100px; }
+  .bar { display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
+         margin-bottom: 12px; }
+  select { background: var(--panel); color: var(--fg); border: 1px solid var(--line);
+           padding: 5px 8px; font: inherit; }
+  label { color: var(--dim); display: inline-flex; gap: 5px; align-items: center; }
+  .stage { background: #000; border: 1px solid var(--line); display: inline-block;
+           line-height: 0; }
+  canvas { image-rendering: pixelated; width: 960px; height: 672px;
+           max-width: 100%; height: auto; aspect-ratio: 320 / 224; display: block; }
+  .readout { display: flex; gap: 18px; flex-wrap: wrap; color: var(--dim);
+             margin: 8px 0 14px; }
+  #status { color: var(--accent); min-height: 1.5em; }
+  #info { color: var(--dim); margin-bottom: 10px; }
+  #info b { color: var(--fg); font-weight: 600; }
+  .note { border-left: 2px solid var(--line); padding: 2px 0 2px 14px;
+          color: var(--dim); margin-top: 26px; max-width: 68ch; }
+  .note h2 { font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
+             color: var(--dim); margin: 0 0 6px; font-weight: 600; }
+  .note b { color: var(--fg); font-weight: 600; }
+  code { color: var(--accent); }
+  kbd { background: var(--panel); border: 1px solid var(--line); border-radius: 3px;
+        padding: 0 4px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Pitfall: The Mayan Adventure — web port</h1>
+  <p>Backgrounds decoded straight from the 1995 Win32 <code>.PH</code> level
+     files and composited in the browser at the game's own 320×224.
+     <a href="https://github.com/halr9000/pitfall-re">source &amp; RE notes</a></p>
+</header>
+<main>
+  <div class="bar">
+    <label>level <select id="level"></select></label>
+    <label><input type="checkbox" id="flags"> flag nibbles</label>
+    <label><input type="checkbox" id="grid"> 16px tile grid</label>
+    <span id="fps"></span>
+  </div>
+  <div id="status"></div>
+  <div id="info"></div>
+  <div class="stage"><canvas id="screen" width="320" height="224"></canvas></div>
+  <div class="readout"><span id="probe"></span></div>
+  <p style="color:var(--dim)">
+    <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> or <kbd>WASD</kbd> scroll ·
+    <kbd>Shift</kbd> faster · hover the screen to probe a cell
+  </p>
+
+  <div class="note">
+    <h2>What this is</h2>
+    <p>Stage one of the port: the <b>asset pipeline and renderer</b>. The tile
+    sheet, the cellmap and the palette come out of <code>LEVELnn.PH</code>
+    exactly as <code>load_level</code> reads them, and the scroll clamp uses the
+    original's own <code>(tiles − viewport) × 16</code> arithmetic.</p>
+    <p>There is <b>no player and no physics yet</b>. That needs three things
+    still to be reverse-engineered: the meaning of the cellmap
+    <b>flag nibble</b> (collision), the <b>sprite/&ldquo;alien&rdquo; record
+    format</b> in the later <code>.PH</code> blocks, and the <b>movement
+    constants</b>. Turn on the flag overlay to see the unresolved data.</p>
+  </div>
+</main>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

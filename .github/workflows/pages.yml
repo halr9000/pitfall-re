@@ -1,0 +1,38 @@
+name: Deploy web port to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths: ['web/**', '.github/workflows/pages.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - name: Check the asset bundle is present
+        run: |
+          test -f web/data/levels.json || {
+            echo "web/data/levels.json missing — run tools/export_web.py and commit web/data/"
+            exit 1
+          }
+          echo "bundle: $(du -sh web/data | cut -f1), $(ls web/data | wc -l) files"
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+      - id: deployment
+        uses: actions/deploy-pages@v4

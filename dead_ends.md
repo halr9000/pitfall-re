@@ -24,3 +24,18 @@ Lifecycle: **Active** -> **Resolved** (prefix with RESOLVED + date once understo
   offset 0x14 (file 0x18) and 12 zero bytes pad up to `pix_off`. Confirmed for all
   24 non-empty levels by `tools/check_ph.py` (max cell index == tile count - 1).
 - **Session**: 001
+
+## Cellmap flag nibble — "bit 0 = opacity" hypothesis
+- **Tried**: reading bit 0 of the cellmap flag nibble as an opacity/draw bit. The
+  motivation was that levels with no parallax entry in `g_level_assets`
+  (`temple1`, `map1`, `temple3`) have bit 0 set on *every* cell, while levels
+  with a parallax layer have thousands of cells at nibble 0.
+- **Failed because**: rendering with it (`render_level.py --alpha`) deletes the
+  level. On LEVEL13 only 153 of 4096 cells survive — the vertical walls are
+  nibble 8 and C (bit 0 clear) yet are plainly drawn in the correct render.
+  Whatever bit 0 means, it is not "draw this cell".
+- **Better approach**: stop guessing from statistics. xref the cellmap reader —
+  find the code that indexes `g_block0_ptr + 0x14` (or a derived pointer) with a
+  camera position, and read what it does with `v >> 12`. The blitter and the
+  collision test are probably two separate consumers of the same word.
+- **Session**: 002
