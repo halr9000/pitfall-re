@@ -1,0 +1,218 @@
+# labels.csv — PITFALL.EXE (Win32 PE, image base 0x400000)
+# key,name,comment
+# key = virtual address (0x0044A8FF). Prefix "off:" for a raw file offset,
+#       "ph:<FILE>:<offset>" for an offset inside a .PH data file.
+#
+# ---- entry / CRT ----------------------------------------------------------
+0x0044A8FF,WinMainCRTStartup,PE entry point; MSVC 2.x CRT startup with SEH frame
+0x00449995,sprintf,CRT sprintf (40 callers)
+0x0043C820,fatal_exit,called after every load-error MessageBox
+#
+# ---- level loading --------------------------------------------------------
+0x004460E0,load_level,"opens levelNN.ph, reads its blocks, fills the map globals (16 callers)"
+0x004451A0,build_palette_remap,"(rgb_table, count, mode) -> fills the 256-byte remap LUT at g_pal_remap"
+0x0047112C,str_level_fmt,'level%2.2d.ph'
+0x0046E084,str_init_ph,'init.ph'
+0x0046F0D8,g_level_assets,25 x 6 x 16-byte per-level asset name table (bg/parlax/det/dt2/trg/als)
+0x00451A2C,g_level_num,current level index 0..24
+0x004502B0,g_level_filename,composed 'levelNN.ph' path
+0x0045028C,g_level_file,HANDLE returned by CreateFileA for the open .PH
+0x00450290,g_block_size,scratch: uint32 block length read ahead of each block payload
+0x004504E0,g_level_heap,base of the level block arena
+0x00450FC4,g_block0_ptr,pointer to the loaded block 0 payload
+0x00450510,g_next_block_ptr,16-byte-aligned write cursor for blocks 1..n
+0x00450FCC,g_have_level_file,1 when a .PH was opened; 0 selects the built-in defaults
+#
+# ---- map geometry (derived from block 0 header) ---------------------------
+0x00450FB4,g_map_tiles_w,map width in 16px tiles = cell_w / 2
+0x00450FB0,g_map_tiles_h,map height in 16px tiles = cell_h / 2
+0x00450FB8,g_scroll_max_x,(g_map_tiles_w - 20) * 16 — viewport is 20 tiles wide
+0x00450FBC,g_scroll_max_y,(g_map_tiles_h - 14) * 16 — viewport is 14 tiles tall
+0x00450298,g_pixel_data,block0 + pix_off — start of the 8bpp 8x8 tile sheet
+0x004502A0,g_palette,block0 + pal_off — start of the RGB palette
+0x004503C0,g_pal_remap,256-byte palette-index translation table
+#
+# ---- UI / misc ------------------------------------------------------------
+0x0046D3CC,g_hwnd_main,HWND passed to MessageBoxA
+0x00451CB0,g_str_load_error,.bss buffer holding the load-error format string (LoadStringA)
+0x00451B20,g_str_msgbox_title,.bss buffer holding the message box caption
+0x00474390,imp_COMCTL32_ord5,COMCTL32.dll import thunk
+0x00474394,imp_PropertySheetA,COMCTL32.dll import thunk
+0x00474398,imp_COMCTL32_ord6,COMCTL32.dll import thunk
+0x0047439C,imp_COMCTL32_ord17,COMCTL32.dll import thunk
+0x00474410,imp_CreateFileA,KERNEL32.dll import thunk
+0x00474414,imp_ReadFile,KERNEL32.dll import thunk
+0x00474418,imp_LeaveCriticalSection,KERNEL32.dll import thunk
+0x0047441C,imp__lwrite,KERNEL32.dll import thunk
+0x00474420,imp__lclose,KERNEL32.dll import thunk
+0x00474424,imp_SetStdHandle,KERNEL32.dll import thunk
+0x00474428,imp_SetFilePointer,KERNEL32.dll import thunk
+0x0047442C,imp_EnterCriticalSection,KERNEL32.dll import thunk
+0x00474430,imp_VirtualAlloc,KERNEL32.dll import thunk
+0x00474434,imp_VirtualFree,KERNEL32.dll import thunk
+0x00474438,imp_FlushFileBuffers,KERNEL32.dll import thunk
+0x0047443C,imp__llseek,KERNEL32.dll import thunk
+0x00474440,imp_SetFileAttributesA,KERNEL32.dll import thunk
+0x00474444,imp_GetOEMCP,KERNEL32.dll import thunk
+0x00474448,imp_GetACP,KERNEL32.dll import thunk
+0x0047444C,imp_GetModuleFileNameA,KERNEL32.dll import thunk
+0x00474450,imp_UnhandledExceptionFilter,KERNEL32.dll import thunk
+0x00474454,imp_RtlUnwind,KERNEL32.dll import thunk
+0x00474458,imp_TlsGetValue,KERNEL32.dll import thunk
+0x0047445C,imp_LocalAlloc,KERNEL32.dll import thunk
+0x00474460,imp_LocalFree,KERNEL32.dll import thunk
+0x00474464,imp_FindResourceA,KERNEL32.dll import thunk
+0x00474468,imp_LoadResource,KERNEL32.dll import thunk
+0x0047446C,imp_LockResource,KERNEL32.dll import thunk
+0x00474470,imp_Sleep,KERNEL32.dll import thunk
+0x00474474,imp_SetPriorityClass,KERNEL32.dll import thunk
+0x00474478,imp__lopen,KERNEL32.dll import thunk
+0x0047447C,imp__lcreat,KERNEL32.dll import thunk
+0x00474480,imp_LoadLibraryA,KERNEL32.dll import thunk
+0x00474484,imp_LoadModule,KERNEL32.dll import thunk
+0x00474488,imp_SetErrorMode,KERNEL32.dll import thunk
+0x0047448C,imp_GlobalReAlloc,KERNEL32.dll import thunk
+0x00474490,imp_GetProcAddress,KERNEL32.dll import thunk
+0x00474494,imp_FreeLibrary,KERNEL32.dll import thunk
+0x00474498,imp_GlobalFree,KERNEL32.dll import thunk
+0x0047449C,imp_DeleteCriticalSection,KERNEL32.dll import thunk
+0x004744A0,imp_GlobalUnlock,KERNEL32.dll import thunk
+0x004744A4,imp_GetSystemDirectoryA,KERNEL32.dll import thunk
+0x004744A8,imp_GetTempPathA,KERNEL32.dll import thunk
+0x004744AC,imp_GetFileAttributesA,KERNEL32.dll import thunk
+0x004744B0,imp_GetFileType,KERNEL32.dll import thunk
+0x004744B4,imp_DeleteFileA,KERNEL32.dll import thunk
+0x004744B8,imp_CreateProcessA,KERNEL32.dll import thunk
+0x004744BC,imp_TlsAlloc,KERNEL32.dll import thunk
+0x004744C0,imp_CloseHandle,KERNEL32.dll import thunk
+0x004744C4,imp_GetVersion,KERNEL32.dll import thunk
+0x004744C8,imp_GetCurrentProcess,KERNEL32.dll import thunk
+0x004744CC,imp_InitializeCriticalSection,KERNEL32.dll import thunk
+0x004744D0,imp_GlobalAlloc,KERNEL32.dll import thunk
+0x004744D4,imp_GlobalLock,KERNEL32.dll import thunk
+0x004744D8,imp_GetStdHandle,KERNEL32.dll import thunk
+0x004744DC,imp_GetCPInfo,KERNEL32.dll import thunk
+0x004744E0,imp_GetLastError,KERNEL32.dll import thunk
+0x004744E4,imp_WriteFile,KERNEL32.dll import thunk
+0x004744E8,imp_GetCurrentThreadId,KERNEL32.dll import thunk
+0x004744EC,imp_WideCharToMultiByte,KERNEL32.dll import thunk
+0x004744F0,imp_TlsSetValue,KERNEL32.dll import thunk
+0x004744F4,imp_GetCommandLineA,KERNEL32.dll import thunk
+0x004744F8,imp_MultiByteToWideChar,KERNEL32.dll import thunk
+0x004744FC,imp_GetStartupInfoA,KERNEL32.dll import thunk
+0x00474500,imp_GetModuleHandleA,KERNEL32.dll import thunk
+0x00474504,imp_GetEnvironmentStrings,KERNEL32.dll import thunk
+0x00474508,imp_ExitProcess,KERNEL32.dll import thunk
+0x00474614,imp_timeKillEvent,WINMM.dll import thunk
+0x00474618,imp_auxGetNumDevs,WINMM.dll import thunk
+0x0047461C,imp_auxGetDevCapsA,WINMM.dll import thunk
+0x00474620,imp_auxGetVolume,WINMM.dll import thunk
+0x00474624,imp_auxSetVolume,WINMM.dll import thunk
+0x00474628,imp_mciSendCommandA,WINMM.dll import thunk
+0x0047462C,imp_timeGetTime,WINMM.dll import thunk
+0x00474630,imp_waveOutGetNumDevs,WINMM.dll import thunk
+0x00474634,imp_sndPlaySoundA,WINMM.dll import thunk
+0x00474638,imp_timeEndPeriod,WINMM.dll import thunk
+0x0047463C,imp_timeBeginPeriod,WINMM.dll import thunk
+0x00474640,imp_timeSetEvent,WINMM.dll import thunk
+0x00474644,imp_joyReleaseCapture,WINMM.dll import thunk
+0x00474648,imp_joySetCapture,WINMM.dll import thunk
+0x0047464C,imp_joyGetNumDevs,WINMM.dll import thunk
+0x00474650,imp_joyGetDevCapsA,WINMM.dll import thunk
+0x00474654,imp_joyGetPos,WINMM.dll import thunk
+0x00474510,imp_DestroyWindow,USER32.dll import thunk
+0x00474514,imp_SendMessageA,USER32.dll import thunk
+0x00474518,imp_GetSystemMetrics,USER32.dll import thunk
+0x0047451C,imp_SetCapture,USER32.dll import thunk
+0x00474520,imp_KillTimer,USER32.dll import thunk
+0x00474524,imp_ReleaseCapture,USER32.dll import thunk
+0x00474528,imp_GetDC,USER32.dll import thunk
+0x0047452C,imp_DrawMenuBar,USER32.dll import thunk
+0x00474530,imp_DestroyMenu,USER32.dll import thunk
+0x00474534,imp_SetMenu,USER32.dll import thunk
+0x00474538,imp_LoadMenuA,USER32.dll import thunk
+0x0047453C,imp_LoadStringA,USER32.dll import thunk
+0x00474540,imp_CopyRect,USER32.dll import thunk
+0x00474544,imp_LoadBitmapA,USER32.dll import thunk
+0x00474548,imp_GetDlgCtrlID,USER32.dll import thunk
+0x0047454C,imp_CheckRadioButton,USER32.dll import thunk
+0x00474550,imp_SetTimer,USER32.dll import thunk
+0x00474554,imp_GetAsyncKeyState,USER32.dll import thunk
+0x00474558,imp_SystemParametersInfoA,USER32.dll import thunk
+0x0047455C,imp_GetFocus,USER32.dll import thunk
+0x00474560,imp_IsDlgButtonChecked,USER32.dll import thunk
+0x00474564,imp_CheckDlgButton,USER32.dll import thunk
+0x00474568,imp_EnableWindow,USER32.dll import thunk
+0x0047456C,imp_SetWindowLongA,USER32.dll import thunk
+0x00474570,imp_LoadCursorA,USER32.dll import thunk
+0x00474574,imp_FindWindowA,USER32.dll import thunk
+0x00474578,imp_SendDlgItemMessageA,USER32.dll import thunk
+0x0047457C,imp_CallWindowProcA,USER32.dll import thunk
+0x00474580,imp_GetWindowRect,USER32.dll import thunk
+0x00474584,imp_ClientToScreen,USER32.dll import thunk
+0x00474588,imp_MoveWindow,USER32.dll import thunk
+0x0047458C,imp_EndDialog,USER32.dll import thunk
+0x00474590,imp_MessageBoxA,USER32.dll import thunk
+0x00474594,imp_EnableMenuItem,USER32.dll import thunk
+0x00474598,imp_CheckMenuItem,USER32.dll import thunk
+0x0047459C,imp_AdjustWindowRect,USER32.dll import thunk
+0x004745A0,imp_TranslateMessage,USER32.dll import thunk
+0x004745A4,imp_DispatchMessageA,USER32.dll import thunk
+0x004745A8,imp_PeekMessageA,USER32.dll import thunk
+0x004745AC,imp_PostQuitMessage,USER32.dll import thunk
+0x004745B0,imp_BeginPaint,USER32.dll import thunk
+0x004745B4,imp_EndPaint,USER32.dll import thunk
+0x004745B8,imp_ReleaseDC,USER32.dll import thunk
+0x004745BC,imp_GetClientRect,USER32.dll import thunk
+0x004745C0,imp_ScreenToClient,USER32.dll import thunk
+0x004745C4,imp_PtInRect,USER32.dll import thunk
+0x004745C8,imp_WinHelpA,USER32.dll import thunk
+0x004745CC,imp_PostMessageA,USER32.dll import thunk
+0x004745D0,imp_DialogBoxParamA,USER32.dll import thunk
+0x004745D4,imp_SetCursor,USER32.dll import thunk
+0x004745D8,imp_DefWindowProcA,USER32.dll import thunk
+0x004745DC,imp_MessageBeep,USER32.dll import thunk
+0x004745E0,imp_SetForegroundWindow,USER32.dll import thunk
+0x004745E4,imp_CreateWindowExA,USER32.dll import thunk
+0x004745E8,imp_LoadIconA,USER32.dll import thunk
+0x004745EC,imp_RegisterClassA,USER32.dll import thunk
+0x004745F0,imp_ShowWindow,USER32.dll import thunk
+0x004745F4,imp_GetMenu,USER32.dll import thunk
+0x004745F8,imp_SetWindowPos,USER32.dll import thunk
+0x004745FC,imp_GetWindowLongA,USER32.dll import thunk
+0x00474600,imp_UpdateWindow,USER32.dll import thunk
+0x00474604,imp_GetKeyNameTextA,USER32.dll import thunk
+0x00474608,imp_GetDlgItem,USER32.dll import thunk
+0x0047460C,imp_CreateDialogParamA,USER32.dll import thunk
+0x004743A4,imp_RealizePalette,GDI32.dll import thunk
+0x004743A8,imp_DeleteDC,GDI32.dll import thunk
+0x004743AC,imp_SelectObject,GDI32.dll import thunk
+0x004743B0,imp_StretchBlt,GDI32.dll import thunk
+0x004743B4,imp_GetObjectA,GDI32.dll import thunk
+0x004743B8,imp_SetDIBits,GDI32.dll import thunk
+0x004743BC,imp_CreateCompatibleBitmap,GDI32.dll import thunk
+0x004743C0,imp_CreateCompatibleDC,GDI32.dll import thunk
+0x004743C4,imp_CreatePalette,GDI32.dll import thunk
+0x004743C8,imp_SetBkMode,GDI32.dll import thunk
+0x004743CC,imp_GetStockObject,GDI32.dll import thunk
+0x004743D0,imp_CreateFontIndirectA,GDI32.dll import thunk
+0x004743D4,imp_CreateDIBSection,GDI32.dll import thunk
+0x004743D8,imp_SetTextColor,GDI32.dll import thunk
+0x004743DC,imp_SetStretchBltMode,GDI32.dll import thunk
+0x004743E0,imp_GetSystemPaletteEntries,GDI32.dll import thunk
+0x004743E4,imp_SetDIBColorTable,GDI32.dll import thunk
+0x004743E8,imp_SetSystemPaletteUse,GDI32.dll import thunk
+0x004743EC,imp_GetDeviceCaps,GDI32.dll import thunk
+0x004743F0,imp_GetSystemPaletteUse,GDI32.dll import thunk
+0x004743F4,imp_BitBlt,GDI32.dll import thunk
+0x004743F8,imp_GdiFlush,GDI32.dll import thunk
+0x004743FC,imp_AnimatePalette,GDI32.dll import thunk
+0x00474400,imp_TextOutA,GDI32.dll import thunk
+0x00474404,imp_DeleteObject,GDI32.dll import thunk
+0x00474408,imp_SelectPalette,GDI32.dll import thunk
+0x00474374,imp_RegCloseKey,ADVAPI32.dll import thunk
+0x00474378,imp_RegFlushKey,ADVAPI32.dll import thunk
+0x0047437C,imp_RegOpenKeyA,ADVAPI32.dll import thunk
+0x00474380,imp_RegQueryValueExA,ADVAPI32.dll import thunk
+0x00474384,imp_RegSetValueExA,ADVAPI32.dll import thunk
+0x00474388,imp_RegCreateKeyA,ADVAPI32.dll import thunk

@@ -1,0 +1,12 @@
+# Retail game data — copyrighted, never committed. Drop your own copy in game/.
+game/
+
+# Everything under gfx/ is regenerated from game/ by the tools.
+gfx/
+
+# Autonomous session logs
+re_loop_sessions/*.txt
+
+__pycache__/
+*.pyc
+web/catalog_data.json

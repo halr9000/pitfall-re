@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pitfall: The Mayan Adventure — asset catalog</title>
+<style>
+  :root {
+    --bg: #14110d; --panel: #1e1a14; --line: #3a3227;
+    --fg: #e8ddc8; --dim: #9c8f77; --accent: #d8a13c;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+         font: 14px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  header { padding: 18px 24px; border-bottom: 1px solid var(--line); }
+  h1 { margin: 0 0 4px; font-size: 18px; color: var(--accent); font-weight: 600; }
+  header p { margin: 0; color: var(--dim); }
+  main { padding: 20px 24px 80px; }
+  .bar { display: flex; gap: 14px; align-items: center; flex-wrap: wrap;
+         margin-bottom: 18px; }
+  .bar label { color: var(--dim); }
+  select, input[type=range] { background: var(--panel); color: var(--fg);
+         border: 1px solid var(--line); padding: 4px 6px; font: inherit; }
+  .level { border: 1px solid var(--line); background: var(--panel);
+           margin-bottom: 18px; }
+  .level > summary { cursor: pointer; padding: 10px 14px; list-style: none;
+           display: flex; gap: 16px; align-items: baseline; flex-wrap: wrap; }
+  .level > summary::-webkit-details-marker { display: none; }
+  .level > summary:hover { background: #262117; }
+  .n { color: var(--accent); font-weight: 600; min-width: 3ch; }
+  .name { min-width: 14ch; }
+  .meta { color: var(--dim); }
+  .body { padding: 4px 14px 16px; border-top: 1px solid var(--line); }
+  .row { margin: 14px 0; }
+  .row h3 { margin: 0 0 6px; font-size: 12px; letter-spacing: .08em;
+            text-transform: uppercase; color: var(--dim); font-weight: 600; }
+  .scroll { overflow-x: auto; border: 1px solid var(--line); background: #000;
+            max-height: 70vh; }
+  .scroll img { display: block; image-rendering: pixelated; }
+  .swatches { display: flex; flex-wrap: wrap; gap: 2px; }
+  .sw { width: 26px; height: 26px; border: 1px solid #0006; position: relative; }
+  .sw span { position: absolute; inset: auto 0 -16px; text-align: center;
+             font-size: 9px; color: var(--dim); }
+  table { border-collapse: collapse; }
+  td, th { padding: 2px 12px 2px 0; text-align: left; }
+  th { color: var(--dim); font-weight: 400; }
+  .flags b { color: var(--accent); }
+  .warn { border: 1px solid var(--accent); padding: 14px 18px; color: var(--fg); }
+  code { color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Pitfall: The Mayan Adventure — asset catalog</h1>
+  <p>Everything below is decoded from <code>game/LEVELnn.PH</code> by
+     <code>tools/ph_dump.py</code> and <code>tools/render_level.py</code>.
+     Serve this directory with <code>python3 -m http.server 8000</code>.</p>
+</header>
+<main id="main">Loading…</main>
+
+<script>
+const main = document.getElementById('main');
+
+function el(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text !== undefined) n.textContent = text;
+  return n;
+}
+
+function levelCard(L) {
+  const d = el('details', 'level');
+  const s = el('summary');
+  s.append(el('span', 'n', String(L.n).padStart(2, '0')));
+  s.append(el('span', 'name', L.bg || '(no background)'));
+  if (L.empty) {
+    s.append(el('span', 'meta', 'zero header — loader falls back to built-in defaults'));
+    d.append(s);
+    return d;
+  }
+  s.append(el('span', 'meta',
+    `${L.cell_w}×${L.cell_h} cells · ${L.px_w}×${L.px_h}px · ` +
+    `${L.tile_count} tiles · ${L.palette.length} colors · ${L.blocks} blocks`));
+  d.append(s);
+
+  const body = el('div', 'body');
+
+  const facts = el('div', 'row');
+  facts.append(el('h3', null, 'block 0'));
+  const t = el('table');
+  const rows = [
+    ['cell grid (8×8)', `${L.cell_w} × ${L.cell_h}`],
+    ['tile grid (16×16)', `${L.tiles16_w} × ${L.tiles16_h}`],
+    ['pixel size', `${L.px_w} × ${L.px_h}`],
+    ['scroll limit', `x ${L.scroll_max_x}, y ${L.scroll_max_y} (viewport 320×224)`],
+    ['tile sheet', `${L.tile_count} tiles of 8×8, 1 byte per pixel`],
+    ['palette', `${L.palette.length} RGB triples`],
+    ['parallax layer', L.parallax || '—'],
+    ['container', `${L.blocks} blocks, ${L.bytes.toLocaleString()} bytes`],
+  ];
+  for (const [k, v] of rows) {
+    const tr = el('tr');
+    tr.append(el('th', null, k), el('td', null, v));
+    t.append(tr);
+  }
+  facts.append(t);
+  body.append(facts);
+
+  const fl = el('div', 'row flags');
+  fl.append(el('h3', null, 'cellmap flag nibbles'));
+  const p = el('p');
+  p.innerHTML = Object.entries(L.flags)
+    .map(([k, v]) => `<b>${k}</b>:${v.toLocaleString()}`).join('  ');
+  fl.append(p);
+  body.append(fl);
+
+  if (L.map_png) {
+    const r = el('div', 'row');
+    r.append(el('h3', null, 'background — cellmap × tile sheet × palette'));
+    const box = el('div', 'scroll');
+    const img = el('img');
+    img.loading = 'lazy';
+    img.src = L.map_png;
+    img.width = L.px_w;
+    box.append(img);
+    r.append(box);
+    body.append(r);
+  }
+  if (L.tiles_png) {
+    const r = el('div', 'row');
+    r.append(el('h3', null, 'tile sheet (2× scale, 32 per row)'));
+    const box = el('div', 'scroll');
+    const img = el('img');
+    img.loading = 'lazy';
+    img.src = L.tiles_png;
+    box.append(img);
+    r.append(box);
+    body.append(r);
+  }
+
+  const pal = el('div', 'row');
+  pal.append(el('h3', null, 'palette'));
+  const sw = el('div', 'swatches');
+  L.palette.forEach((c, i) => {
+    const b = el('div', 'sw');
+    b.style.background = c;
+    b.title = `${i}: ${c}`;
+    sw.append(b);
+  });
+  pal.append(sw);
+  body.append(pal);
+
+  d.append(body);
+  return d;
+}
+
+fetch('catalog_data.json')
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(data => {
+    main.textContent = '';
+    const bar = el('div', 'bar');
+    bar.append(el('span', 'meta', `${data.levels.length} level files`));
+    const open = el('button', null, 'expand all');
+    open.onclick = () => document.querySelectorAll('details').forEach(d => d.open = true);
+    const close = el('button', null, 'collapse all');
+    close.onclick = () => document.querySelectorAll('details').forEach(d => d.open = false);
+    bar.append(open, close);
+    main.append(bar);
+    data.levels.forEach(L => main.append(levelCard(L)));
+  })
+  .catch(e => {
+    main.textContent = '';
+    const w = el('div', 'warn');
+    w.innerHTML = `<p><b>catalog_data.json not found (${e.message}).</b></p>
+      <p>Put the retail game files in <code>game/</code>, then from
+      <code>pitfall-re/</code> run:</p>
+      <pre>python3 tools/render_level.py --all
+python3 tools/render_level.py --all --tiles
+python3 tools/gen_catalog.py
+python3 -m http.server 8000    # then open /web/catalog.html</pre>`;
+    main.append(w);
+  });
+</script>
+</body>
+</html>
