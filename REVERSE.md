@@ -209,6 +209,24 @@ exactly the walls and floor, while on `LEVEL00` it marks one tree trunk and
 misses platforms Harry plainly stands on. Either collision lives elsewhere
 (the `.trg` blocks?) or bit 15 is only one input to it.
 
+**Where the collision search stands.** Not found yet. Ruled out so far:
+
+| Candidate | Result |
+|-----------|--------|
+| 0x0043305F, the other `g_map_tiles_w` reader | level init: derives world bounds `0x00465BAE/B0 = (tiles x 16) - 0x20`, an entity clamp box in pixels. No cellmap access. |
+| `Flags(%d)` in the `BAD-...` debug string | reads `[edi+3]` — a byte in the **alien record**, unrelated to cell flags |
+| `g_cell_w` (0x0046B248) readers | all 21 are inside the renderer, 0x004372xx–0x004374xx |
+| `g_block0_ptr` (0x00450FC4) readers | only `load_level` and `draw_background` — so collision uses a cached pointer, not this one |
+| mask-style bit-15 tests (`test ah,0x80`, `and ax,0x8000`, `bt ...,15`) | **zero hits** in code outside two CRT float routines |
+
+That last one is the useful lead: bit 15 is the **sign bit of the `int16` cell
+word**, so a test would be a sign check — `movsx` then `js`/`jns`, or
+`cmp word [...],0` / `jl` — not a mask. Search those forms next.
+
+Also worth noting from 0x0042685B: entity positions are **16-bit pixel
+coordinates** (0x00465B0F is one) clamped against those world bounds, and that
+routine steps by 7 px per frame.
+
 **Verification** — `tools/check_ph.py` confirms for every level file that the
 tile sheet is a whole number of 64-byte tiles and that the highest index used
 by the cellmap is exactly `tile_count − 1`:
@@ -404,9 +422,10 @@ Stage 1 (background renderer + asset pipeline + Pages deploy) is done. The
 remaining work, in dependency order:
 
 - [ ] **Collision.** Draw-mode bits are resolved; the collision source is not.
-      Find the code that reads the cellmap outside `draw_background` — the only
-      other `g_map_tiles_w` consumer is 0x00433060 — and check whether bit 15
-      feeds it. Then add `web/js/physics.js`. Blocks everything else.
+      See the elimination table under Data Structures. Next: search for sign
+      tests on a 16-bit load (`movsx` + `js`, `cmp word [...],0` + `jl`) rather
+      than mask tests, since bit 15 is the cell word's sign bit. Then add
+      `web/js/physics.js`. Blocks everything else.
 - [ ] Read `blit_cell_mode0` (0x00436DF4) and `blit_cell_mode2` (0x00436BD8) —
       almost certainly the transparent/masked variants, needed for correct
       layering in the port

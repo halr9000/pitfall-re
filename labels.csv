@@ -230,3 +230,10 @@
 0x0046FBA0,g_camera_x,camera x in pixels
 0x0046FBA4,g_camera_y,camera y in pixels
 0x00436DF4,blit_cell_mode0,"masked 8x8 blit: palette index 0 transparent, tile index 0 draws nothing"
+0x0043305F,init_world_bounds,"derives 0x465BAE/B0 = (map tiles * 16) - 0x20 from g_map_tiles_w/h"
+0x004658AC,g_map_w_tiles16,map width in 16px tiles (word copy)
+0x004658AE,g_map_h_tiles16,map height in 16px tiles (word copy)
+0x00465BAE,g_world_max_x,(map_w_tiles * 16) - 32 — entity position clamp
+0x00465BB0,g_world_max_y,(map_h_tiles * 16) - 32 — entity position clamp
+0x00465B0F,g_debug_cam_x,16-bit pixel X stepped 7px/frame by 0x00426810
+0x00426810,debug_scroll,"single-caller camera mover, steps 7px and clamps to world bounds"

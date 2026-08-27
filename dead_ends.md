@@ -51,3 +51,21 @@ Lifecycle: **Active** -> **Resolved** (prefix with RESOLVED + date once understo
   the one that is not the renderer. Read that. Also consider that collision may
   come from the `.trg` blocks rather than the cellmap at all.
 - **Session**: 002
+
+## Collision test — first search pass
+- **Tried**: four routes to the code that reads the cellmap for collision —
+  the second `g_map_tiles_w` consumer (0x0043305F), the `Flags(%d)` debug
+  string, the readers of `g_cell_w` and of `g_block0_ptr`, and a byte search for
+  mask-style bit-15 tests.
+- **Failed because**: 0x0043305F is level init computing world bounds;
+  `Flags(%d)` is a byte in the alien record at `[edi+3]`, not a cell flag; every
+  `g_cell_w` reader is inside the renderer; `g_block0_ptr` is read only by
+  `load_level` and `draw_background`. So collision works from a cached pointer
+  this search did not reach.
+- **Better approach**: bit 15 is the **sign bit** of the int16 cell word, and
+  there are no mask-style tests of it anywhere in the binary. Look for
+  `movsx r32, word` followed by a sign branch, or `cmp word [...], 0` + `jl`.
+  Separately, come at it from the player: 0x00465B0F is a 16-bit pixel X
+  clamped against the world bounds at 0x00465BAE — find who writes it during
+  normal play, not the 7px debug mover at 0x00426810.
+- **Session**: 002
