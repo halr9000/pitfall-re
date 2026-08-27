@@ -216,3 +216,16 @@
 0x00474380,imp_RegQueryValueExA,ADVAPI32.dll import thunk
 0x00474384,imp_RegSetValueExA,ADVAPI32.dll import thunk
 0x00474388,imp_RegCreateKeyA,ADVAPI32.dll import thunk
+0x00436FB4,draw_background,"composites the visible cellmap into the back buffer; 2 callers"
+0x00436B2C,blit_cell,"draws one 8x8 cell; ebx = cell word, edi = back buffer dest"
+0x00436DF4,blit_cell_mode0,"cell bit 12 clear -> this blit path"
+0x00436BD8,blit_cell_mode2,"cell bits 13-14 set -> this blit path"
+0x0046B1F8,g_tile_sheet,block0 + pix_off — base of the 8x8 tile sheet
+0x0046B248,g_cell_w,cellmap width in cells (copied from block-0 header)
+0x0046B24C,g_cell_h,cellmap height in cells
+0x0046B250,g_draw_col,current cellmap column during the background blit
+0x0046B254,g_draw_row,current cellmap row during the background blit
+0x0046B258,g_row_base,cellmap pointer for the current row
+0x0046D3E8,g_backbuffer,"back buffer base; row stride 0x1C0 = 448 bytes"
+0x0046FBA0,g_camera_x,camera x in pixels
+0x0046FBA4,g_camera_y,camera y in pixels

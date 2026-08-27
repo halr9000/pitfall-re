@@ -169,9 +169,38 @@ structured rather than noise:
 - `LEVEL21` (the vine intro, one screen tall) is 1785 cells of nibble 0 and
   7 of nibble 1.
 
-The wall-vs-floor split reads like a surface-type or collision-direction
-encoding rather than a simple solidity bit. An opacity reading of bit 0 was
-tested and rejected — see `dead_ends.md`.
+**The draw-mode bits are now confirmed from code** (VERIFIED). The per-cell
+blitter `blit_cell` (0x00436B2C) receives the whole cell word in `ebx` and
+opens with:
+
+```
+0x00436B2C  test bh, 0x10          ; bit 12
+0x00436B2F  je   blit_cell_mode0   ;   clear -> a different blit path
+0x00436B35  test bh, 0x60          ; bits 13-14
+0x00436B38  jne  blit_cell_mode2   ;   set -> another blit path
+0x00436B3E  and  ebx, 0xFFF        ; tile index
+0x00436B44  shl  ebx, 6            ; * 64 bytes per tile
+0x00436B47  add  ebx, g_tile_sheet
+            ... fully unrolled 8x8 copy, 8 bytes per row, stride 0x1C0
+```
+
+| Cell bit | Meaning |
+|----------|---------|
+| 0–11 | tile index |
+| 12 (0x1000) | selects the plain blit; clear routes to `blit_cell_mode0` |
+| 13–14 (0x6000) | either set routes to `blit_cell_mode2` |
+| 15 (0x8000) | **never tested while drawing** — carries no rendering meaning |
+
+So the nibble is a **draw-mode selector**, not an opacity flag, which is why
+the "bit 12 = opacity" experiment deleted the walls: those cells are still
+drawn, just by another routine. `blit_cell_mode0` and `blit_cell_mode2` have
+not been read yet.
+
+Bit 15's meaning is **still open**. It is the obvious collision candidate, but
+the web port's overlay rules out the simple reading: on `LEVEL13` it covers
+exactly the walls and floor, while on `LEVEL00` it marks one tree trunk and
+misses platforms Harry plainly stands on. Either collision lives elsewhere
+(the `.trg` blocks?) or bit 15 is only one input to it.
 
 **Verification** — `tools/check_ph.py` confirms for every level file that the
 tile sheet is a whole number of 64-byte tiles and that the highest index used
@@ -226,6 +255,35 @@ the level-editor's working set left in the shipping build.
 
 Reproduce with:
 `python3 tools/decode_tables.py 0x0046F0D8 25 'struct:96:str16,str16,str16,str16,str16,str16'`
+
+### Background renderer (VERIFIED by trace)
+
+`draw_background` (0x00436FB4, 2 callers) composites the visible cellmap into
+the back buffer each frame. It special-cases levels 0x0B–0x0D (the `simon`
+rooms), 0x13 (`map1`), 0x14 (`gene2600`), 0x15 (`vines`) and 0x16 (`room2`),
+then falls through to the general path at 0x004371A5:
+
+```
+edx = block0[0x00] -> g_cell_w            ; cellmap width
+edx = block0[0x04] -> g_cell_h            ; cellmap height
+edx = block0[0x08] + block0 -> g_tile_sheet
+esi = block0 + cell_col*2 + 0x14          ; cellmap base is block0 + 0x14
+edi -= 0x1C0 * (camera_y & 7)             ; back buffer stride is 448 bytes
+esi += (cell_w * 2) * cell_row            ; row-major
+loop 0x29 = 41 columns:
+    ebx = *esi ; esi += 2 ; call blit_cell ; edi += 8
+    wrap the column index at g_cell_w      ; the cellmap wraps horizontally
+after each row: edi += 0xCB8               ; 0xCB8 + 41*8 = 3584 = 448 * 8
+```
+
+Confirmations this yields, independent of `load_level`:
+
+- the cellmap really does start at **block offset 0x14** and is row-major with
+  a `cell_w` stride, 2 bytes per cell
+- the back buffer row stride is **0x1C0 = 448 bytes** (320 visible + 128 slack)
+- 41 columns × 8 px = 328 px drawn per row, one cell more than the 320-px
+  viewport, which is what allows sub-cell horizontal scrolling
+- the cellmap **wraps horizontally**, so levels scroll around
 
 ### State Machine
 
@@ -315,8 +373,13 @@ has to serve it.
 Stage 1 (background renderer + asset pipeline + Pages deploy) is done. The
 remaining work, in dependency order:
 
-- [ ] **Collision.** Resolve the cellmap flag nibble by finding the code that
-      reads it, then add `web/js/physics.js`. Blocks everything else.
+- [ ] **Collision.** Draw-mode bits are resolved; the collision source is not.
+      Find the code that reads the cellmap outside `draw_background` — the only
+      other `g_map_tiles_w` consumer is 0x00433060 — and check whether bit 15
+      feeds it. Then add `web/js/physics.js`. Blocks everything else.
+- [ ] Read `blit_cell_mode0` (0x00436DF4) and `blit_cell_mode2` (0x00436BD8) —
+      almost certainly the transparent/masked variants, needed for correct
+      layering in the port
 - [ ] Decode the `.det` / `.dt2` detail-layer blocks and draw them over the
       background — several levels look sparse without them
 - [ ] Decode the parallax layer (`for_par.bg`, `clouds.bg`, …) and scroll it at

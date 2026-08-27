@@ -39,3 +39,15 @@ Lifecycle: **Active** -> **Resolved** (prefix with RESOLVED + date once understo
   camera position, and read what it does with `v >> 12`. The blitter and the
   collision test are probably two separate consumers of the same word.
 - **Session**: 002
+
+## Cellmap bit 15 as the collision map
+- **Tried**: after reading `blit_cell` (0x00436B2C) and finding bit 15 is the one
+  cell bit the blitter never tests, taking it as the solidity/collision bit.
+- **Failed because**: the web port's `solid cells` overlay contradicts it. On
+  LEVEL13 bit 15 covers exactly the walls and floor, but on LEVEL00 it marks one
+  tree trunk and misses branch platforms that are obviously standable.
+- **Better approach**: find the *other* cellmap consumer. `g_map_tiles_w`
+  (0x00450FB4) is read from only two places outside `load_level`; 0x00433060 is
+  the one that is not the renderer. Read that. Also consider that collision may
+  come from the `.trg` blocks rather than the cellmap at all.
+- **Session**: 002

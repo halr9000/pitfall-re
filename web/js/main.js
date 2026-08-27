@@ -18,6 +18,7 @@ const ui = {
   status: document.getElementById('status'),
   info: document.getElementById('info'),
   flags: document.getElementById('flags'),
+  solid: document.getElementById('solid'),
   grid: document.getElementById('grid'),
   probe: document.getElementById('probe'),
 };
@@ -119,6 +120,26 @@ function drawFlags(lv, ox, oy) {
   ctx.globalAlpha = 1;
 }
 
+// Cell bit 15 (0x8000) is the one nibble bit the tile blitter at 0x00436B2C
+// never tests, so it carries no drawing meaning. What it *does* mean is still
+// open: on LEVEL13 it covers exactly the walls and floor, but on LEVEL00 it
+// misses obvious platforms, so it is not the whole collision map. Overlay kept
+// as an investigation aid. See REVERSE.md.
+function drawSolid(lv, ox, oy) {
+  const c0 = ox >> 3, c1 = Math.min(lv.cell_w - 1, (ox + SCREEN_W) >> 3);
+  const r0 = oy >> 3, r1 = Math.min(lv.cell_h - 1, (oy + SCREEN_H) >> 3);
+  ctx.globalAlpha = 0.45;
+  ctx.fillStyle = '#ff2d55';
+  for (let cy = r0; cy <= r1; cy++) {
+    for (let cx = c0; cx <= c1; cx++) {
+      if (lv.cells[cy * lv.cell_w + cx] & 0x8000) {
+        ctx.fillRect(cx * 8 - ox, cy * 8 - oy, 8, 8);
+      }
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+
 function drawGrid(ox, oy) {
   ctx.strokeStyle = 'rgba(255,255,255,.18)';
   ctx.lineWidth = 1;
@@ -139,6 +160,7 @@ function render() {
   if (!lv) return;
   const ox = Math.round(state.camX), oy = Math.round(state.camY);
   ctx.drawImage(lv.canvas, ox, oy, SCREEN_W, SCREEN_H, 0, 0, SCREEN_W, SCREEN_H);
+  if (ui.solid.checked) drawSolid(lv, ox, oy);
   if (ui.flags.checked) drawFlags(lv, ox, oy);
   if (ui.grid.checked) drawGrid(ox, oy);
 

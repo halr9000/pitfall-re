@@ -52,6 +52,7 @@
 <main>
   <div class="bar">
     <label>level <select id="level"></select></label>
+    <label><input type="checkbox" id="solid"> solid cells (0x8000)</label>
     <label><input type="checkbox" id="flags"> flag nibbles</label>
     <label><input type="checkbox" id="grid"> 16px tile grid</label>
     <span id="fps"></span>
@@ -71,11 +72,15 @@
     sheet, the cellmap and the palette come out of <code>LEVELnn.PH</code>
     exactly as <code>load_level</code> reads them, and the scroll clamp uses the
     original's own <code>(tiles − viewport) × 16</code> arithmetic.</p>
-    <p>There is <b>no player and no physics yet</b>. That needs three things
-    still to be reverse-engineered: the meaning of the cellmap
-    <b>flag nibble</b> (collision), the <b>sprite/&ldquo;alien&rdquo; record
-    format</b> in the later <code>.PH</code> blocks, and the <b>movement
-    constants</b>. Turn on the flag overlay to see the unresolved data.</p>
+    <p>There is <b>no player and no physics yet</b>. The tile blitter at
+    <code>0x00436B2C</code> has been read, so the cell word's <b>draw-mode
+    bits are confirmed</b> — bit&nbsp;12 picks the blit path, bits&nbsp;13–14
+    select variants, and bit&nbsp;15 is never tested while drawing. What
+    bit&nbsp;15 <em>does</em> mean is still open: on <code>ceil3</code> it
+    covers exactly the walls and floor, on <code>forest1</code> it misses
+    obvious platforms. Toggle <b>solid cells</b> and <b>flag nibbles</b> to
+    see the data. Collision, the <b>sprite record format</b> and the
+    <b>movement constants</b> all remain.</p>
   </div>
 </main>
 <script type="module" src="js/main.js"></script>
