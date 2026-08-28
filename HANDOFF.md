@@ -31,12 +31,57 @@ transitions, and the movement constants are invented.
 
 ---
 
+## Before you start
+
+**Install the `/re` skill** if this session doesn't already have it. The whole
+project is built around it — it defines the phase structure, the
+`REVERSE.md` / `labels.csv` / `dead_ends.md` workflow, and the tool conventions
+in `CLAUDE.md`. Check for it first; a session that already lists `re` among its
+skills needs nothing.
+
+```bash
+git clone https://github.com/vgrichina/re-skill.git
+cd re-skill && ./install.sh          # copies to ~/.claude/skills/re
+```
+
+Then `/re` continues from `REVERSE.md`, and `/re <binary>` bootstraps a new
+project. `re_loop.sh` in this repo is already configured for autonomous
+sessions — the human runs it, the agent never invokes it.
+
+## Getting the game files
+
+`game/` is gitignored — it holds retail files. You need `PITFALL.EXE`,
+`INIT.PH`, `LEVEL00.PH`…`LEVEL24.PH` and `WAIL32.DLL`.
+
+Source: https://www.myabandonware.com/game/pitfall-the-mayan-adventure-876#download
+
+Pick the **Windows** entry. The package this project was developed against is
+`PitfallTheMayanAdventure_Win_EN_RIPVersion.zip` — the "RIP" build, meaning
+audio and video were stripped. That matters: the EXE references 200+
+`SOUNDxx.WAV` files and the `.AVI` cutscenes that are simply absent, so don't
+treat their absence as a decoding failure.
+
+Verify you have the same bytes:
+
+```
+32 files, 8.7 MB unpacked
+
+sha256  c7dadc1b511d8ae16dd713f826fd49d706b4286b6cc6d5b5ee9283aa344ca2fd  PITFALL.EXE   710144 B
+sha256  c369523c295ad13e16ad35b653424c4caa49ec2dae7d668422092413a198d090  INIT.PH      2057605 B
+```
+
+Every address in this document and in `labels.csv` is relative to that exact
+`PITFALL.EXE`. A different build — a non-RIP release, a patched version, a
+different language — will not line up, and nothing will tell you except that
+the disassembly stops making sense.
+
+I could not fetch the direct download URL: the domain is blocked by this
+environment's network egress proxy. The package name above is the identifier to
+look for on that page.
+
 ## Getting running in five minutes
 
-`game/` is gitignored — it holds retail files. Supply your own copy of
-`PITFALL.EXE`, `INIT.PH` and `LEVEL00.PH`…`LEVEL24.PH` (the files this was
-developed against came from
-https://www.myabandonware.com/game/pitfall-the-mayan-adventure-876).
+Everything below is stdlib-only Python 3.8+.
 
 ```bash
 python3 tools/instruction_set.py      # decoder self-tests, expect 21/21
@@ -48,9 +93,8 @@ python3 tools/export_sprites.py       # rebuild web/data/sprites/
 cd web && python3 -m http.server 8000
 ```
 
-Everything is stdlib-only Python 3.8+. No disassembler library, no PNG library,
-no build step. Headless verification uses Playwright + the preinstalled
-Chromium at `/opt/pw-browsers/chromium`.
+No disassembler library, no PNG library, no build step. Headless verification
+uses Playwright with the preinstalled Chromium at `/opt/pw-browsers/chromium`.
 
 ---
 
