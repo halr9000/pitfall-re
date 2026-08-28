@@ -100,3 +100,18 @@ Lifecycle: **Active** -> **Resolved** (prefix with RESOLVED + date once understo
 - **Better approach**: treat them as orphaned scripts and look for a jump that
   enters them, rather than inventing opcodes to explain them.
 - **Session**: 004
+
+## RESOLVED — sprite RLE run length read as `b & 0x7F`
+- **Tried**: decoding literal runs as `b & 0x7F` pixels, inferred from
+  hand-decoding two tiny banks.
+- **Failed because**: it is off by one on every run. Half of all decoded rows
+  overran the frame width; the decoder clamped them silently, which showed up as
+  scattered pixel debris around Harry that I wrongly explained away as whip and
+  dust. Byte-consumption checks could not catch it — the 0x7E terminator absorbs
+  the difference, so both rules consume identical bytes.
+- **Resolved by**: reading LoadSprite's remap pass (0x0044554E), which does
+  `sub ecx, 0x7F`. Confirmed by row geometry: 0% overrun with `b - 0x7F` versus
+  50% with `b & 0x7F` across 33,581 rows.
+- **Lesson**: for a format check, pick a metric the encoding cannot absorb.
+  Geometry discriminated where byte counts did not.
+- **Session**: 005

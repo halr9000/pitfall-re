@@ -16,7 +16,7 @@ Bank layout (block payload):
     palette: ncol * 3 bytes, RGB
 
 Row RLE, one stream per row:
-    b >= 0x80   emit (b & 0x7F) literal pixels, taken from the following bytes
+    b >= 0x80   emit (b - 0x7F) literal pixels, taken from the following bytes
     b <  0x7E   skip b pixels (transparent)
     b == 0x7F   end of row
     b == 0x7E   end of sprite
@@ -88,7 +88,11 @@ def decode_frame(data, base, foff, limit):
             x = 0
             continue
         if b & 0x80:
-            n = b & 0x7F
+            # run length is b - 0x7F, not b & 0x7F: LoadSprite's remap pass
+            # (0x0044554E) does `mov cl,al; sub ecx,0x7F` before the copy loop.
+            # Under b & 0x7F, 50% of rows overran the frame width; under this
+            # rule, 0% do.
+            n = b - 0x7F
             for _ in range(n):
                 if p >= end:
                     break

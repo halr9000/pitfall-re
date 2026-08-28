@@ -282,6 +282,15 @@ layer blocks:
 Blocks whose payload begins with **`0x34561234`** are sprite banks — the same
 magic that opens `INIT.PH`. Levels 15's blocks 3-5 are of this kind.
 
+#### `LoadSprite` (0x004453A0, 646 callers)
+
+The routine behind the `LoadSprite("%s",&%s_s)` debug string. It calls
+`build_palette_remap` and then walks every frame's RLE, translating each literal
+pixel through `g_pal_remap` (0x004503C0) **in place** — the sprite equivalent of
+the tile-sheet retint loop in `load_level`. The current bank base lives in
+0x00450FA0, and a frame's RLE begins at `bank + frame_offset + 0x10`, which is
+where the frame-header size of 0x10 is confirmed from code rather than inferred.
+
 #### Sprite banks — magic `0x34561234` (VERIFIED)
 
 646 of 648 such blocks across all files decode cleanly with this layout; the
@@ -316,16 +325,25 @@ Row RLE, restarted per row:
 
 | Byte | Meaning |
 |------|---------|
-| `>= 0x80` | emit `b & 0x7F` literal pixels, taken from the following bytes |
+| `>= 0x80` | emit **`b - 0x7F`** literal pixels, taken from the following bytes |
 | `< 0x7E` | skip `b` pixels — transparent |
 | `0x7F` | end of row |
 | `0x7E` | end of sprite |
 
 Palette index 0 is transparent, the same convention as `blit_cell_mode0`.
 
+The run length is `b - 0x7F`, i.e. one *more* than the low 7 bits. This is not
+an inference: `LoadSprite`'s palette-remap pass (0x0044554E) does
+`mov cl, al` / `sub ecx, 0x7F` before its copy loop, and any byte below 0x80 —
+0x7F included — advances the pointer by exactly one, so skips and row-ends carry
+no payload.
+
 **Verification**: across all 812 frames in `INIT.PH`, the bytes consumed by the
 decoder differ from the span to the next frame offset by **at most 3 bytes**,
-which is 4-byte frame alignment. Visually, `INIT.PH` block 32 decodes to the
+which is 4-byte frame alignment. Independently, with `b - 0x7F` **0% of the
+33,581 decoded rows overrun the frame width**; with `b & 0x7F` half of them do.
+Byte consumption alone cannot tell the two apart, because the `0x7E` terminator
+absorbs the difference — row geometry is the discriminator. Visually, `INIT.PH` block 32 decodes to the
 game's carved-stone font (A-Z, 0-9, punctuation) and block 76 to Harry Jr. in
 mid whip-crack.
 

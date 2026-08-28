@@ -246,3 +246,5 @@
 0x004015B6,entity_behaviour_A,"one entity type's update; installs its callback at [esi+0x1C] and an EXE-resident script"
 0x00401D6A,entity_A_on_frame,"[esi+0x1C] callback: peeks the next script byte and reacts before anim_advance runs"
 0x004561FE,script_entity_A,"animation script living in the EXE's own data rather than a .PH block"
+0x004453A0,LoadSprite,"loads a sprite bank: builds the palette remap then retints every frame's RLE in place (646 callers)"
+0x00450FA0,g_sprite_bank,base pointer of the sprite bank currently being loaded
