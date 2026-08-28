@@ -478,6 +478,28 @@ So a script is a **flat byte stream**, not command/operand pairs:
 
 The per-frame hold time lives in the **entity**, not the script.
 
+**A caution about the entity layout.** `anim_advance` writes the frame index to
+`[esi+0x0C]` as a dword, while the player code at 0x0042E28A writes a *sprite
+bank pointer* to `[edi+0x0E]` and compares it there. Those overlap, so the
+offsets below cannot all belong to one universal struct — entity kinds
+evidently differ, or one base pointer is offset from the other. Treat the table
+as "fields seen relative to the pointer that routine uses", not as a single
+layout.
+
+Confirmed separately in the player path:
+
+| Address | Meaning |
+|---------|---------|
+| `[edi+0x0E]` | sprite bank pointer — assigned from and compared against the registry globals |
+| 0x004601B8 | `g_cur_entity`, the entity being updated |
+| 0x00451A10 | a 5-field animation-start parameter block, written by exactly two sites (`hyirun`, `jgurun`) — shared scratch, not the player's persistent state |
+
+Scripts also live in the EXE's data: **0x004561FE decodes cleanly with the VM**
+as `f0 f1 f2 f3 f3 f3 f3 f3 call(0xBE) …  LOOP` — sequential cels, held frames,
+interspersed calls, and a loop terminator. That is the script
+`entity_behaviour_A` installs, and it confirms the encoding outside the `.PH`
+files entirely.
+
 This also pins down part of the entity struct:
 
 | Offset | Field |

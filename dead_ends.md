@@ -127,3 +127,16 @@ Lifecycle: **Active** -> **Resolved** (prefix with RESOLVED + date once understo
 - **Better approach**: when a parser is permissive, "it parses" is not evidence.
   Check whether the data actually exercises the features the format defines.
 - **Session**: 006
+
+## 0x0046166B taken for an animation script
+- **Tried**: the player path at 0x0042E28D stores 0x0046166B into 0x00465BA0
+  right after setting the sprite bank, so I read it as the matching script
+  pointer.
+- **Failed because**: it does not decode as one. The bytes yield implausible
+  frame indices (0xFB = 251) and embedded zeros, unlike 0x004561FE which decodes
+  as a clean cel list ending in LOOP. Whatever 0x00465BA0 receives, it is not a
+  script.
+- **Better approach**: find the writer of the player's script-pointer field
+  directly rather than assuming the pointer stored next to a bank assignment is
+  the script.
+- **Session**: 007

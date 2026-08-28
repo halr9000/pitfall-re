@@ -251,3 +251,5 @@
 0x00450520,g_sprite_count,"incrementing LoadSprite registration counter"
 0x0045053C,g_sprite_slots,"array of destination globals, indexed by g_sprite_count — the Nth LoadSprite call registers here"
 0x00446C05,load_level_layers,"remaps a layer block's pixels through g_pal_remap (continuation of load_level)"
+0x004601B8,g_cur_entity,pointer to the entity currently being updated
+0x00451A10,g_anim_params,"5-field animation-start parameter block; written by exactly two sites (hyirun, jgurun)"
