@@ -8,6 +8,7 @@
 import { loadManifest, loadLevel, cellAt } from './level.js';
 import { makePlayer, findSpawn, step, px, TUNING, SOLID_BIT } from './physics.js';
 import { loadSprites, drawFrame } from './sprites.js';
+import { Demo } from './demo.js';
 
 const SCREEN_W = 320, SCREEN_H = 224;
 
@@ -24,7 +25,21 @@ const ui = {
   grid: document.getElementById('grid'),
   probe: document.getElementById('probe'),
   play: document.getElementById('play'),
+  demo: document.getElementById('demo'),
 };
+
+const demo = new Demo();
+
+function setDemo(on) {
+  demo.active = on;
+  if (on) {
+    demo.reset();
+    ui.play.checked = true;      // the demo only means anything in play mode
+  }
+  ui.demo.textContent = on ? '\u23F8\uFE0E Stop' : '\u25B6\uFE0E Demo';
+  ui.demo.setAttribute('aria-pressed', String(on));
+}
+ui.demo.addEventListener('click', () => setDemo(!demo.active));
 
 const state = {
   manifest: null,
@@ -50,6 +65,7 @@ const FLAG_COLORS = [
 addEventListener('keydown', e => {
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault();
   state.keys.add(e.key.length === 1 ? e.key.toLowerCase() : e.key);
+  if (demo.active) setDemo(false);    // a real key press always wins
 });
 addEventListener('keyup', e => state.keys.delete(e.key.length === 1 ? e.key.toLowerCase() : e.key));
 addEventListener('blur', () => state.keys.clear());
@@ -86,6 +102,7 @@ async function select(n) {
     state.level = lv;
     const sp = findSpawn(lv);
     state.player = makePlayer(sp.x, sp.y);
+    if (demo.active) demo.reset();
     state.camX = state.camY = 0;
     ui.status.textContent = '';
     const stack = lv.layers.map((L, i) =>
@@ -117,7 +134,7 @@ function update(dt) {
   if (ui.play.checked && state.player) {
     // fixed 60Hz steps so physics does not vary with frame rate
     state.acc = Math.min(state.acc + dt, 0.25);
-    const input = {
+    const input = demo.poll(dt, state.player, px) || {
       left: held('ArrowLeft', 'a'),
       right: held('ArrowRight', 'd'),
       jump: held(' ', 'ArrowUp', 'w'),

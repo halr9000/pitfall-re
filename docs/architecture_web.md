@@ -19,7 +19,10 @@ web/index.html
         ├── findSpawn      │
         ├── step           ├── js/physics.js
         ├── px, TUNING     │
-        └── SOLID_BIT     ─┘
+        ├── SOLID_BIT     ─┘
+        ├── loadSprites   ─┐
+        ├── drawFrame      ├── js/sprites.js
+        └── Demo           ──── js/demo.js
 ```
 
 | Module | Exports | Responsibility |
@@ -27,6 +30,7 @@ web/index.html
 | `js/level.js` | `loadManifest`, `loadLevel`, `cellAt` | fetch the bundle, composite the background, expose cell lookup |
 | `js/physics.js` | `SOLID_BIT`, `TUNING`, `isSolid`, `boxHits`, `makePlayer`, `findSpawn`, `step`, `px` | player box vs the bit-12 cell grid; 1/4-px fixed point, fixed 60Hz step |
 | `js/sprites.js` | `loadSprites`, `drawFrame` | sprite sheets + frame origins; bottom-centre anchor |
+| `js/demo.js` | `Demo` | scripted walk for the ▶ Demo button, with a progress watchdog |
 | `js/main.js` | — | camera, input, frame loop, debug overlays, level picker |
 
 `level.js` holds no DOM state beyond the offscreen canvas it builds; `main.js`
