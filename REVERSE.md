@@ -412,10 +412,34 @@ decoded — that mapping lives in the animation scripts (blocks 1-4 of each
 level: a uint16 offset table stepping by 3, then `0xFF`-terminated byte
 records).
 
-#### Animation scripts — blocks 1-4 (VERIFIED from the interpreter)
+#### Record blocks 1-4 — one container, more than one payload type
 
-Each level's blocks 1-4 that are neither a layer nor a sprite bank hold
-animation scripts:
+**Correction.** This section previously said blocks 1-4 all hold animation
+scripts. They do not. What holds for all four is the *container*; only block 1
+demonstrably drives the animation VM.
+
+| Block | records | `0xFE` calls | `0xF0` loops | even-length payloads |
+|-------|---------|--------------|--------------|----------------------|
+| 1 | 2442 | **727** | **58** | 97% |
+| 2 | 2766 | 0 | 0 | 100% |
+| 3 | 1395 | 0 | 0 | 100% |
+| 4 | 1058 | 0 | 1 | 99% |
+
+Blocks 2-4 contain **no control codes at all** and are consistently 2-byte
+records, so they are almost certainly the manifest's `.dt2` / `.trg` / `.als`
+payloads — placements, triggers, entity spawns. A `LEVEL00` block-4 record
+reads `18 5a 1b 5a 1e 5a 25 17 ff`: four pairs whose first value climbs while
+the second holds, which looks positional but is **not** confirmed against code.
+They parse as "scripts" only because the encoding is permissive — any byte
+below 0xF0 reads as a frame index.
+
+The blanket claim was a case of a permissive parser succeeding on data it was
+never meant to read; the giveaway was that blocks 2 and 3 use none of the
+control codes the format defines.
+
+#### Animation scripts — block 1 (VERIFIED from the interpreter)
+
+The container, shared by blocks 1-4:
 
 | Offset | Type | Notes |
 |--------|------|-------|

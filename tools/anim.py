@@ -1,5 +1,27 @@
 #!/usr/bin/env python3
-"""Decode the animation-script blocks (blocks 1-4 of each level .PH).
+"""Decode the record blocks (blocks 1-4 of each level .PH).
+
+All four share one container, but they are NOT all animation scripts — an
+earlier version of this file claimed they were. What is established:
+
+  * the container is the same for all four: a big-endian u16 slot table then
+    0xFF-terminated records, and the records tile the block with no gaps
+  * record payloads are even-length in 97-100% of cases, i.e. 2-byte records
+  * **only block 1 contains any 0xFE or 0xF0 byte** — the control codes the
+    animation interpreter acts on. Across every level: 727 calls and 58 of the
+    59 loops are in block 1; blocks 2 and 3 have none at all.
+
+So block 1 is the one that demonstrably drives the animation VM. Blocks 2-4
+share the container but carry plain 2-byte records with no control codes; they
+are most likely the manifest's .dt2 / .trg / .als payloads (placements,
+triggers, entity spawns). Their pair semantics are undetermined — an example
+from LEVEL00 block 4 is `18 5a 1b 5a 1e 5a 25 17 ff`, four pairs whose first
+values climb while the second stays fixed, which looks positional but has not
+been confirmed against code.
+
+This parser decodes all four the same way, so treat "frame" ops in blocks 2-4
+as raw bytes rather than frame indices.
+
 
 Block layout:
     +0x00  u16[NSLOTS]   big-endian offsets, block-relative; 0 = empty slot

@@ -115,3 +115,15 @@ Lifecycle: **Active** -> **Resolved** (prefix with RESOLVED + date once understo
 - **Lesson**: for a format check, pick a metric the encoding cannot absorb.
   Geometry discriminated where byte counts did not.
 - **Session**: 005
+
+## "Blocks 1-4 all hold animation scripts"
+- **Tried**: after decoding the animation VM from anim_advance, treating every
+  one of blocks 1-4 as animation scripts because all four parse cleanly and tile
+  their block with no gaps.
+- **Failed because**: the encoding is permissive — any byte below 0xF0 reads as
+  a frame index, so almost any data parses. Counting control codes settled it:
+  all 727 0xFE calls and 58 of the 59 0xF0 loops are in block 1, while blocks 2
+  and 3 contain none at all.
+- **Better approach**: when a parser is permissive, "it parses" is not evidence.
+  Check whether the data actually exercises the features the format defines.
+- **Session**: 006
