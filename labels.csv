@@ -247,4 +247,7 @@
 0x00401D6A,entity_A_on_frame,"[esi+0x1C] callback: peeks the next script byte and reacts before anim_advance runs"
 0x004561FE,script_entity_A,"animation script living in the EXE's own data rather than a .PH block"
 0x004453A0,LoadSprite,"loads a sprite bank: builds the palette remap then retints every frame's RLE in place (646 callers)"
-0x00450FA0,g_sprite_bank,base pointer of the sprite bank currently being loaded
+0x00450FA0,g_cur_block,"base pointer of the block being processed; used as a sprite bank by LoadSprite and as a layer by the loader at 0x00446C05"
+0x00450520,g_sprite_count,"incrementing LoadSprite registration counter"
+0x0045053C,g_sprite_slots,"array of destination globals, indexed by g_sprite_count — the Nth LoadSprite call registers here"
+0x00446C05,load_level_layers,"remaps a layer block's pixels through g_pal_remap (continuation of load_level)"

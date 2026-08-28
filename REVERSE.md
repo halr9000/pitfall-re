@@ -291,6 +291,45 @@ the tile-sheet retint loop in `load_level`. The current bank base lives in
 0x00450FA0, and a frame's RLE begins at `bank + frame_offset + 0x10`, which is
 where the frame-header size of 0x10 is confirmed from code rather than inferred.
 
+#### The sprite registry (VERIFIED)
+
+`LoadSprite(name, &dest)` is called from **646 generated call sites**, exactly
+the shape the editor's debug string advertises
+(`LoadSprite("%s",&%s_s);\t\t//Level %d`):
+
+```
+push <dest global>      ; &<name>_s
+push <name string>
+call LoadSprite
+add  esp, 8
+```
+
+`tools/sprite_registry.py` extracts all of them: **311 distinct sprite names
+bound to 290 destination globals**. The names are 8-character and
+self-describing, and they identify Harry's animation set outright — the `hyi*`
+prefix accounts for roughly 80 of them, matching the 81 `INIT.PH` banks that
+share his palette:
+
+| Group | Examples |
+|-------|----------|
+| locomotion | `hyirun`, `hyirun2`, `hyifall`, `hyihjump`, `hyivjump` |
+| whip | `hyiwhip`, `hyirwhip`, `hyivwhip`, `hyihwhip`, `hyicrwhp` |
+| ropes and vines | `hyihang`, `hyidrope`, `hyiroped`, `hyiurope`, `hyisvine`, `hyidvine` |
+| transitions (`X2Y`) | `hyirn2cl` run→climb, `hyicr2cl` crouch→climb, `hyist2cr` stand→crouch, `hyist2pu` stand→pull-up, `hyijp2sn` |
+| set pieces | `hyiskte1..4` skateboard, `hyisomr1..3` somersault, `hyibung1..3` bungee |
+| states | `hyiready`, `hyidie`, `hyidazed`, `hyipush`, `hyipull`, `hyisink` |
+
+Other prefixes name the cast and props: `fx*` effects, `ob*` objects,
+`mi_*` pickups (`mi_gold`, `mi_ring`, `mi_1up`, `mi_time`), plus per-enemy sets
+(`skz*`, `jgu*`, `mkz*`, `tsz*`, `sni*`).
+
+**How a name reaches a bank is positional, not by lookup.** The names do not
+appear anywhere in `INIT.PH`. `LoadSprite` opens by incrementing a counter at
+`g_sprite_count` (0x00450520) and storing its `dest` argument into
+`g_sprite_slots[count]` (0x0045053C), so the *n*th call registers the *n*th
+bank. Binding a name to a specific `INIT.PH` block therefore means replaying
+the call order, not searching the pack.
+
 #### Sprite banks — magic `0x34561234` (VERIFIED)
 
 646 of 648 such blocks across all files decode cleanly with this layout; the
@@ -646,9 +685,14 @@ remaining work, in dependency order:
       dead editor output?
 - [ ] Work out what `anim_call` (0x004261B0) does with its argument — sound,
       spawn, hitbox change?
-- [ ] Map slot -> sprite bank so the port knows which of the 81 Harry banks is
-      idle / walk / run / jump / whip. The scripts give frame indices; the bank
-      binding is elsewhere (probably the `.als` records)
+- [x] **Sprite registry extracted** — 646 `LoadSprite(name, &dest)` call sites,
+      311 names, and the `hyi*` set names every Harry animation
+- [ ] Bind name -> `INIT.PH` block index. `LoadSprite` registers sequentially
+      into `g_sprite_slots`, so replay the call order of the init path and pair
+      it against the banks in file order, then verify visually (`hyirun` should
+      decode to a run cycle)
+- [ ] Once bound, drive the port's animation from the real banks instead of the
+      observational choice it uses now
 - [ ] Render the level entities ("aliens") from their own banks and place them
       from the `.als` records
 - [ ] Extract the movement constants (walk/run speed, jump impulse, gravity)

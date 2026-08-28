@@ -57,6 +57,7 @@ precisely so `pypng` is not needed).
 | `export_web.py` | writes the `web/data/` asset bundle for the browser port |
 | `sprite.py` | decodes the `0x34561234` sprite banks; `--scan`, `--list`, `--png` |
 | `anim.py` | decodes the animation-script blocks; `--scan`, `--opcodes` |
+| `sprite_registry.py` | extracts the 646 `LoadSprite(name, &dest)` bindings |
 | `export_sprites.py` | writes `web/data/sprites/` for the browser port |
 | `find_cellmap_users.py` | scans .text for pixel-to-cell conversions |
 | `gen_catalog.py` | writes `web/catalog_data.json` for the asset browser |
