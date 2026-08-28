@@ -235,5 +235,6 @@
 0x004658AE,g_map_h_tiles16,map height in 16px tiles (word copy)
 0x00465BAE,g_world_max_x,(map_w_tiles * 16) - 32 — entity position clamp
 0x00465BB0,g_world_max_y,(map_h_tiles * 16) - 32 — entity position clamp
-0x00465B0F,g_debug_cam_x,16-bit pixel X stepped 7px/frame by 0x00426810
-0x00426810,debug_scroll,"single-caller camera mover, steps 7px and clamps to world bounds"
+0x00465B0F,g_player_x,"16-bit pixel X; the listener position for audio distance at 0x00404714"
+0x00426810,move_player_right,"steps g_player_x by 7px, clamped to g_world_max_x"
+0x00404714,sound_distance_atten,"|listener - source| >> 3 clamped to 7, then calls 0x00404DCB"

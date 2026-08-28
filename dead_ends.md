@@ -52,6 +52,12 @@ Lifecycle: **Active** -> **Resolved** (prefix with RESOLVED + date once understo
   come from the `.trg` blocks rather than the cellmap at all.
 - **Session**: 002
 
+## RESOLVED 2026-08-27 (data side) — which cell bit is solid
+- Bit **12** is the collision map, not bit 15. Proven from code to select the
+  opaque blit; empirically its mask is a textbook platformer collision map on
+  both LEVEL00 and LEVEL24 while decoration is excluded. The collision *test* in
+  the binary is still unlocated, so this remains inference.
+
 ## Collision test — first search pass
 - **Tried**: four routes to the code that reads the cellmap for collision —
   the second `g_map_tiles_w` consumer (0x0043305F), the `Flags(%d)` debug

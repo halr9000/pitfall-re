@@ -203,25 +203,42 @@ transparent colour**, and a masked cell lets whatever was drawn earlier show
 through. This is what the rejected opacity experiment got wrong: those cells
 are drawn, just masked, so skipping them deleted the walls.
 
-Bit 15's meaning is **still open**. It is the obvious collision candidate, but
-the web port's overlay rules out the simple reading: on `LEVEL13` it covers
-exactly the walls and floor, while on `LEVEL00` it marks one tree trunk and
-misses platforms Harry plainly stands on. Either collision lives elsewhere
-(the `.trg` blocks?) or bit 15 is only one input to it.
+**Bit 12 is the collision map** (strong inference, not yet proven from the
+collision code itself). Two independent things point at it:
 
-**Where the collision search stands.** Not found yet. Ruled out so far:
+1. Proven from code: bit 12 selects the opaque blit over the masked one.
+2. Empirically its spatial pattern *is* a collision map. Rendered as a mask over
+   dimmed art (`gfx/levelNN_bit12.png`), on `LEVEL24` it traces continuous
+   ground lines, ledge surfaces, sloped ramps, vertical poles and the rope
+   rigging; on `LEVEL00` the tree trunks and the ground mass. In both, the
+   decorative vines and grass tufts are excluded.
+
+The reading that makes sense of it: solid terrain is drawn opaquely and
+decoration is drawn masked, so one bit serves both. That is why the earlier
+"bit 12 = opacity" experiment failed in a confusing way — the bit *is* about
+opacity, but the test skipped masked cells instead of masking them.
+
+**Caveat**: the collision *test* has not been located in the binary, so this is
+inference from the data, not proof. The port treats `solid == bit 12` and says
+so.
+
+**Bit 15 is not the collision map.** Rendered the same way it marks level-edge
+walls and clusters around mechanisms and hazards, leaving walkable ledges
+unmarked. Its meaning is still open.
+
+**Where the collision-code search stands.** Still not found. Ruled out:
 
 | Candidate | Result |
 |-----------|--------|
-| 0x0043305F, the other `g_map_tiles_w` reader | level init: derives world bounds `0x00465BAE/B0 = (tiles x 16) - 0x20`, an entity clamp box in pixels. No cellmap access. |
-| `Flags(%d)` in the `BAD-...` debug string | reads `[edi+3]` — a byte in the **alien record**, unrelated to cell flags |
-| `g_cell_w` (0x0046B248) readers | all 21 are inside the renderer, 0x004372xx–0x004374xx |
-| `g_block0_ptr` (0x00450FC4) readers | only `load_level` and `draw_background` — so collision uses a cached pointer, not this one |
-| mask-style bit-15 tests (`test ah,0x80`, `and ax,0x8000`, `bt ...,15`) | **zero hits** in code outside two CRT float routines |
-
-That last one is the useful lead: bit 15 is the **sign bit of the `int16` cell
-word**, so a test would be a sign check — `movsx` then `js`/`jns`, or
-`cmp word [...],0` / `jl` — not a mask. Search those forms next.
+| 0x0043305F, the other `g_map_tiles_w` reader | level init deriving world bounds `(tiles x 16) - 0x20`; no cellmap access |
+| `Flags(%d)` in the `BAD-...` debug string | reads `[edi+3]`, a byte in the **alien record** |
+| `g_cell_w` (0x0046B248) readers | all 21 inside the renderer |
+| `g_block0_ptr` (0x00450FC4) readers | only `load_level` and `draw_background` |
+| mask-style bit-15 tests | zero hits outside two CRT float routines |
+| alien update funcs 0x004426E0 / 0x00442BF0 / 0x00442DC0 / 0x00442FA0 | sprite/animation work; `sar eax,2` shows positions are 1/4-pixel fixed point |
+| `>>3` scan across all of .text (`tools/find_cellmap_users.py`) | only the renderer plus 0x00404714 / 0x0041C3DF, which are **audio distance attenuation** (`>>3` clamped to 7) |
+| a per-tile attribute table in blocks 1-4 | no size ratio to tile count holds across levels |
+| blocks 1-4 as collision geometry | they are **animation scripts**: a uint16 offset table stepping by 3, then variable-length byte records terminated by 0xFF |
 
 Also worth noting from 0x0042685B: entity positions are **16-bit pixel
 coordinates** (0x00465B0F is one) clamped against those world bounds, and that

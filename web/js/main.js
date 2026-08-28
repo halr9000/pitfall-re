@@ -137,11 +137,14 @@ function drawFlags(lv, ox, oy) {
   ctx.globalAlpha = 1;
 }
 
-// Cell bit 15 (0x8000) is the one nibble bit the tile blitter at 0x00436B2C
-// never tests, so it carries no drawing meaning. What it *does* mean is still
-// open: on LEVEL13 it covers exactly the walls and floor, but on LEVEL00 it
-// misses obvious platforms, so it is not the whole collision map. Overlay kept
-// as an investigation aid. See REVERSE.md.
+// Cell bit 12 (0x1000) is proven from code to select the opaque blit, and its
+// spatial pattern is a textbook collision map: on forest1 it traces the tree
+// trunks and ground mass, on level22 the ledges, ramps and poles, while
+// decorative vines and grass stay unmarked. The collision *test* has not been
+// found in the binary yet, so treating solid == bit 12 is inference, not proof.
+// See REVERSE.md.
+const SOLID_BIT = 0x1000;
+
 function drawSolid(lv, ox, oy) {
   const L = lv.layers[0];
   const c0 = ox >> 3, c1 = Math.min(L.cell_w - 1, (ox + SCREEN_W) >> 3);
@@ -150,7 +153,7 @@ function drawSolid(lv, ox, oy) {
   ctx.fillStyle = '#ff2d55';
   for (let cy = r0; cy <= r1; cy++) {
     for (let cx = c0; cx <= c1; cx++) {
-      if (L.cells[cy * L.cell_w + cx] & 0x8000) {
+      if (L.cells[cy * L.cell_w + cx] & SOLID_BIT) {
         ctx.fillRect(cx * 8 - ox, cy * 8 - oy, 8, 8);
       }
     }
@@ -188,7 +191,8 @@ function render() {
     ui.probe.textContent =
       `px ${px},${py}  cell ${px >> 3},${py >> 3}  ` +
       `word 0x${v.toString(16).padStart(4, '0')}  ` +
-      `tile ${v & 0xfff}  flags 0x${(v >> 12).toString(16).toUpperCase()}`;
+      `tile ${v & 0xfff}  flags 0x${(v >> 12).toString(16).toUpperCase()}  ` +
+      `${v & SOLID_BIT ? 'SOLID' : 'open'}`;
   } else {
     ui.probe.textContent = `camera ${ox},${oy} / ${lv.scroll_max_x},${lv.scroll_max_y}`;
   }

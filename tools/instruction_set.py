@@ -470,7 +470,9 @@ def decode(data, off, va=None, bits=32):
         if op == 0xFF and dec.reg in (2, 3, 4, 5, 6):
             ops = [rm]
         if immspec:
-            ops.append(_imm(dec, ins, immspec))
+            # immspec may be a literal operand ("1", "cl") as well as a real
+            # immediate, so go through _operand rather than _imm.
+            ops.append(_operand(dec, ins, immspec))
         ins.mnemonic = mn
         ins.ops = ops
         if op == 0xFF and dec.reg in (2, 3):
@@ -708,6 +710,11 @@ if __name__ == "__main__":
         (bytes.fromhex("f3a4"), "rep movsb"),
         (bytes.fromhex("0f8f10000000"), "jg 0x16"),
         (bytes.fromhex("ff2485c0470400"), "jmp dword [eax*4+0x447C0]"),
+        (bytes.fromhex("d3e0"), "shl eax, cl"),
+        (bytes.fromhex("d3fa"), "sar edx, cl"),
+        (bytes.fromhex("d1e0"), "shl eax, 1"),
+        (bytes.fromhex("c1f803"), "sar eax, 0x3"),
+        (bytes.fromhex("d2e9"), "shr cl, cl"),
     ]
     ok = 0
     for raw, expect in tests:
