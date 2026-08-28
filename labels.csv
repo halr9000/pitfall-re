@@ -241,3 +241,8 @@
 0x00401DBC,anim_advance,"animation stepper: ticks [esi+0x29] to [esi+0x28], then reads the next script byte"
 0x004261B0,anim_call,"0xFE handler: argument arrives in 0x00460180 (7 callers of anim_advance)"
 0x00460180,g_scratch_word,"general scratch temp; also carries the 0xFE script argument to anim_call"
+0x0043387E,rand,"PRNG: mixes the state struct at 0x00466772, returns via g_scratch_word"
+0x00466772,g_rand_state,"PRNG state: +0/+4 accumulators, +6 xor word, +8 call counter"
+0x004015B6,entity_behaviour_A,"one entity type's update; installs its callback at [esi+0x1C] and an EXE-resident script"
+0x00401D6A,entity_A_on_frame,"[esi+0x1C] callback: peeks the next script byte and reacts before anim_advance runs"
+0x004561FE,script_entity_A,"animation script living in the EXE's own data rather than a .PH block"

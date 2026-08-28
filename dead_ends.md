@@ -88,3 +88,15 @@ Lifecycle: **Active** -> **Resolved** (prefix with RESOLVED + date once understo
   0xF0 loops, 0xFF ends. The per-frame hold time is an entity field, not script
   data, which is why no "duration" operand was ever there to find.
 - **Session**: 003
+
+## "More control codes hide in 0xF1..0xFD"
+- **Tried**: explaining 8 script blocks whose bytes are not all reached from the
+  slot table by positing unhandled control codes, and reading the code above
+  `anim_advance` expecting a bigger interpreter.
+- **Failed because**: that code is one entity type's behaviour routine, not an
+  interpreter. Dumping the unreached ranges settled it — every one is a
+  well-formed script ending in 0xFF, and several are a single 0xFF of padding.
+  Nothing is mis-parsed; the ranges are simply unreferenced.
+- **Better approach**: treat them as orphaned scripts and look for a jump that
+  enters them, rather than inventing opcodes to explain them.
+- **Session**: 004

@@ -392,11 +392,47 @@ unaccounted bytes**. Totals across all levels: 41,165 frame bytes, 7,602 ends,
 727 `0xFE` calls, 59 loops. `LEVEL13` block 2 reads as 30 slots, 20 used, each
 a short cel list such as `f16 f17 END`.
 
-**Caveat**: 8 blocks leave gaps, and frame bytes as high as 0xF9 appear, so
-there are almost certainly **more control codes in 0xF1..0xFD** that
-`anim_advance` does not handle — a second, larger interpreter sits just above it
-at 0x00401D64..0x00401DAA and tests more values (including 0xF0 with a
-40-dword entity clear). Those are not enumerated yet.
+**The gaps are accounted for.** 8 blocks leave byte ranges that no slot points
+at, but every one of them is a **well-formed script** ending in `0xFF` — e.g.
+`5a 21 5d 1d 88 01 89 01 ff` in `LEVEL01` block 1 — and several "gaps" are just
+a stray single `0xFF` of padding (`LEVEL02` block 4, `LEVEL05`, `LEVEL09`). So
+these are unreferenced scripts, most likely level-editor leftovers or entries
+reached by a jump not yet found. They are **not** evidence of missing control
+codes: the encoding parses them cleanly. An earlier note here claimed otherwise
+and was wrong.
+
+### Entity behaviour and the PRNG
+
+The code just above `anim_advance` is not a second interpreter but one entity
+type's behaviour routine, `entity_behaviour_A` (0x004015B6, 12 callers). Its
+setup is a useful template for the entity struct:
+
+```
+[esi]      = 0x007B0000
+[esi+0x14] = 0x004561FE      ; script pointer
+[esi+0x18] = 0x004561FE      ; script start
+[esi+0x1C] = 0x00401D6A      ; per-entity update callback
+[esi+0x28] = 8               ; ticks per frame
+```
+
+Two things this adds:
+
+- **Entity field +0x1C is a callback function pointer**, run per frame. The one
+  installed here (`entity_A_on_frame`, 0x00401D6A) *peeks the next script byte*
+  (`movzx eax, byte [ebx+1]`) and reacts before `anim_advance` consumes it —
+  reading 0x0A as a cue to set a flag, and `0xFE` (when the byte after it is not
+  0x17) as a cue to roll a random number.
+- **Scripts are not only in `.PH` blocks.** This entity's script lives at
+  0x004561FE, inside the EXE's own data.
+
+For this entity type `0xF0` does not merely loop: the handler zeroes 0x40 bytes
+at `esi`, i.e. despawns the entity. So the meaning of a control byte can depend
+on the installed callback.
+
+`rand` (0x0043387E) is a small additive/xor PRNG over a state struct at
+0x00466772 (two accumulators, an xor word, and a call counter), returning its
+result through `g_scratch_word`. The caller loops `rand` until
+`(result & 7) < 6` — a roll-until-in-range idiom.
 
 An earlier reading of these scripts as `(command, operand)` pairs was wrong;
 the giveaway was a flat histogram of ~80 "commands" with similar frequencies.
@@ -586,9 +622,10 @@ remaining work, in dependency order:
       `draw_background` does, instead of pre-flattening the level.
 - [x] **Sprite format decoded** and Harry is drawn in the port
 - [x] **Animation script format decoded** from the interpreter
-- [ ] Enumerate the remaining control codes in 0xF1..0xFD — read the larger
-      interpreter at 0x00401D64..0x00401DAA. 8 script blocks leave gaps without
-      them
+- [x] Resolved the script-block gaps: unreferenced but well-formed scripts plus
+      stray `0xFF` padding, not missing opcodes
+- [ ] Find what references the orphaned scripts — a jump target, or genuinely
+      dead editor output?
 - [ ] Work out what `anim_call` (0x004261B0) does with its argument — sound,
       spawn, hitbox change?
 - [ ] Map slot -> sprite bank so the port knows which of the 81 Harry banks is
