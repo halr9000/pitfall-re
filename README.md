@@ -10,6 +10,9 @@ Read [`CLAUDE.md`](CLAUDE.md) for conventions and the tool index, and
 retail, copyrighted files. Supply your own copy of `PITFALL.EXE`, `INIT.PH` and
 `LEVEL00.PH`…`LEVEL24.PH` there before running anything.
 
+The files this project was developed against came from the abandonware listing
+for the Windows release: <https://www.myabandonware.com/game/pitfall-the-mayan-adventure-876>.
+
 ## Web port
 
 A browser port is in progress; stage 1 (background renderer) is live.
