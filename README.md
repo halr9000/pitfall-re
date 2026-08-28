@@ -3,8 +3,12 @@
 Reverse-engineering workspace for **Pitfall: The Mayan Adventure** (Win32, 1995),
 bootstrapped with the [`/re` skill](https://github.com/vgrichina/re-skill).
 
-Read [`CLAUDE.md`](CLAUDE.md) for conventions and the tool index, and
-[`REVERSE.md`](REVERSE.md) for findings and the task list.
+**Picking this up?** Start with [`HANDOFF.md`](HANDOFF.md) — current state, what is
+proven versus inferred, and where to pick up.
+
+Then [`CLAUDE.md`](CLAUDE.md) for conventions and the tool index,
+[`REVERSE.md`](REVERSE.md) for findings, and [`dead_ends.md`](dead_ends.md) for
+approaches that already failed.
 
 **The game data is not in this repository.** `game/` is gitignored — it holds
 retail, copyrighted files. Supply your own copy of `PITFALL.EXE`, `INIT.PH` and
