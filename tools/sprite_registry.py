@@ -27,6 +27,7 @@ from labels import load_labels  # noqa: E402
 from pe_map import load_pe  # noqa: E402
 
 LOADSPRITE = 0x004453A0
+INIT_LOADER = 0x004457D0    # the function whose 118 calls load INIT.PH in order
 PUSH_IMM32 = 0x68
 CALL_REL32 = 0xE8
 
@@ -97,3 +98,35 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+
+
+# --- name -> INIT.PH block ---------------------------------------------------
+# LoadSprite registers sequentially (g_sprite_count / g_sprite_slots), and the
+# 118 call sites inside INIT_LOADER pair 1:1, in address order, with INIT.PH's
+# 118 decodable banks in file order. Validated by a prediction that could have
+# failed: all 83 `hyi*` names land on banks sharing Harry's palette, and none of
+# the other 35 do.
+def init_ph_mapping(pe=None):
+    from bisect import bisect_right
+    from find_callers import call_targets
+    from ph_dump import blocks
+    from sprite import is_bank, decode_all
+    pe = pe or load_pe()
+    keys = sorted(call_targets(pe))
+    def owner(va):
+        i = bisect_right(keys, va) - 1
+        return keys[i] if i >= 0 else 0
+    sites = sorted(r for r in scan(pe) if owner(r[0]) == INIT_LOADER)
+    data = (Path(__file__).resolve().parent.parent / "game" / "INIT.PH").read_bytes()
+    banks = []
+    for i, _h, p, s in blocks(data):
+        if not is_bank(data, p, s):
+            continue
+        try:
+            decode_all(data, p, s)
+        except Exception:
+            continue
+        banks.append(i)
+    if len(sites) != len(banks):
+        raise RuntimeError(f"{len(sites)} call sites vs {len(banks)} banks")
+    return {nm: blk for (_va, nm, _nv, _d), blk in zip(sites, banks)}

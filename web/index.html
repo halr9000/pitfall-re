@@ -86,15 +86,17 @@
     sheet, the cellmap and the palette come out of <code>LEVELnn.PH</code>
     exactly as <code>load_level</code> reads them, and the scroll clamp uses the
     original's own <code>(tiles − viewport) × 16</code> arithmetic.</p>
-    <p>Harry walks. The collision map is cell <b>bit&nbsp;12</b> — proven from
-    the tile blitter at <code>0x00436B2C</code> to select an opaque blit, and
-    it traces the solid world. His sprite comes from the
-    <code>0x34561234</code> banks in <code>INIT.PH</code>, drawn with the
-    original frame origins (the anchor is his bottom centre).</p>
-    <p>Not yet decoded: which of the <b>81 Harry banks</b> is idle, walk, run
-    or jump — that mapping lives in the animation scripts — the level
-    <b>entities</b>, the real <b>movement constants</b>, and the per-layer
-    <b>parallax scroll rate</b>. Movement values here are provisional.</p>
+    <p>Harry runs. The collision map is cell <b>bit&nbsp;12</b>, proven from
+    the tile blitter at <code>0x00436B2C</code>. His sprites are the game's
+    own named banks — <code>hyiready</code>, <code>hyirun</code>,
+    <code>hyihjump</code>, <code>hyifall</code> — recovered by replaying the
+    <code>LoadSprite</code> registry's call order, and drawn with the original
+    frame origins.</p>
+    <p>Still ours rather than the game's: the state&rarr;animation choice and
+    the playback rate. The decoded animation scripts hold the real cel order
+    and per-entity tick rate and are not wired up yet. The level
+    <b>entities</b>, the real <b>movement constants</b> and the per-layer
+    <b>parallax scroll rate</b> also remain.</p>
   </div>
 </main>
 <script type="module" src="js/main.js"></script>

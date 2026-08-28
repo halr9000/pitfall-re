@@ -1,117 +1,150 @@
 {
- "note": "Frame origins are relative to the sprite's bottom-centre anchor: draw at (anchorX + ox, anchorY + oy). Which bank corresponds to which player action is not decoded yet.",
+ "note": "Frame origins are relative to the sprite's bottom-centre anchor: draw at (anchorX + ox, anchorY + oy). Bank names come from the game's own LoadSprite registry.",
  "banks": {
-  "harry_a": {
-   "sheet": "harry_a.png",
-   "sheet_w": 416,
-   "sheet_h": 122,
-   "source": "INIT.PH block 72",
-   "note": "12 frames, consistent height; used as the walk cycle",
+  "harry_idle": {
+   "sheet": "harry_idle.png",
+   "sheet_w": 272,
+   "sheet_h": 61,
+   "source": "INIT.PH block 83",
+   "note": "sprite 'hyiready'",
    "frames": [
     {
      "x": 1,
      "y": 1,
-     "w": 26,
-     "h": 56,
-     "ox": -14,
-     "oy": -55
-    },
-    {
-     "x": 53,
-     "y": 1,
      "w": 32,
      "h": 57,
-     "ox": -18,
-     "oy": -55
-    },
-    {
-     "x": 105,
-     "y": 1,
-     "w": 41,
-     "h": 57,
-     "ox": -18,
-     "oy": -55
-    },
-    {
-     "x": 157,
-     "y": 1,
-     "w": 39,
-     "h": 55,
-     "ox": -21,
-     "oy": -53
-    },
-    {
-     "x": 209,
-     "y": 1,
-     "w": 39,
-     "h": 57,
-     "ox": -21,
-     "oy": -54
-    },
-    {
-     "x": 261,
-     "y": 1,
-     "w": 31,
-     "h": 57,
-     "ox": -18,
-     "oy": -55
-    },
-    {
-     "x": 313,
-     "y": 1,
-     "w": 35,
-     "h": 59,
-     "ox": -19,
-     "oy": -58
-    },
-    {
-     "x": 365,
-     "y": 1,
-     "w": 50,
-     "h": 58,
-     "ox": -19,
+     "ox": -13,
      "oy": -57
     },
     {
-     "x": 1,
-     "y": 62,
-     "w": 40,
-     "h": 56,
-     "ox": -17,
-     "oy": -55
-    },
-    {
-     "x": 53,
-     "y": 62,
-     "w": 37,
-     "h": 53,
-     "ox": -14,
-     "oy": -52
-    },
-    {
-     "x": 105,
-     "y": 62,
-     "w": 33,
+     "x": 35,
+     "y": 1,
+     "w": 32,
      "h": 57,
-     "ox": -12,
-     "oy": -56
+     "ox": -13,
+     "oy": -57
     },
     {
-     "x": 157,
-     "y": 62,
-     "w": 33,
+     "x": 69,
+     "y": 1,
+     "w": 31,
      "h": 59,
-     "ox": -14,
-     "oy": -58
+     "ox": -13,
+     "oy": -59
+    },
+    {
+     "x": 103,
+     "y": 1,
+     "w": 32,
+     "h": 57,
+     "ox": -13,
+     "oy": -57
+    },
+    {
+     "x": 137,
+     "y": 1,
+     "w": 32,
+     "h": 56,
+     "ox": -13,
+     "oy": -56
     }
    ]
   },
-  "harry_b": {
-   "sheet": "harry_b.png",
+  "harry_run": {
+   "sheet": "harry_run.png",
+   "sheet_w": 472,
+   "sheet_h": 120,
+   "source": "INIT.PH block 89",
+   "note": "sprite 'hyirun'",
+   "frames": [
+    {
+     "x": 1,
+     "y": 1,
+     "w": 57,
+     "h": 50,
+     "ox": -22,
+     "oy": -61
+    },
+    {
+     "x": 60,
+     "y": 1,
+     "w": 44,
+     "h": 58,
+     "ox": -14,
+     "oy": -60
+    },
+    {
+     "x": 119,
+     "y": 1,
+     "w": 34,
+     "h": 55,
+     "ox": -13,
+     "oy": -55
+    },
+    {
+     "x": 178,
+     "y": 1,
+     "w": 41,
+     "h": 47,
+     "ox": -15,
+     "oy": -47
+    },
+    {
+     "x": 237,
+     "y": 1,
+     "w": 54,
+     "h": 54,
+     "ox": -18,
+     "oy": -55
+    },
+    {
+     "x": 296,
+     "y": 1,
+     "w": 56,
+     "h": 53,
+     "ox": -20,
+     "oy": -63
+    },
+    {
+     "x": 355,
+     "y": 1,
+     "w": 49,
+     "h": 57,
+     "ox": -17,
+     "oy": -59
+    },
+    {
+     "x": 414,
+     "y": 1,
+     "w": 36,
+     "h": 54,
+     "ox": -11,
+     "oy": -55
+    },
+    {
+     "x": 1,
+     "y": 61,
+     "w": 40,
+     "h": 47,
+     "ox": -12,
+     "oy": -48
+    },
+    {
+     "x": 60,
+     "y": 61,
+     "w": 53,
+     "h": 53,
+     "ox": -20,
+     "oy": -56
+    }
+   ]
+  },
+  "harry_jump": {
+   "sheet": "harry_jump.png",
    "sheet_w": 496,
    "sheet_h": 122,
    "source": "INIT.PH block 66",
-   "note": "12 frames; used for the airborne pose",
+   "note": "sprite 'hyihjump'",
    "frames": [
     {
      "x": 1,
@@ -208,6 +241,128 @@
      "h": 53,
      "ox": -20,
      "oy": -52
+    }
+   ]
+  },
+  "harry_fall": {
+   "sheet": "harry_fall.png",
+   "sheet_w": 560,
+   "sheet_h": 71,
+   "source": "INIT.PH block 62",
+   "note": "sprite 'hyifall'",
+   "frames": [
+    {
+     "x": 1,
+     "y": 1,
+     "w": 63,
+     "h": 64,
+     "ox": -30,
+     "oy": -65
+    },
+    {
+     "x": 71,
+     "y": 1,
+     "w": 59,
+     "h": 68,
+     "ox": -29,
+     "oy": -65
+    },
+    {
+     "x": 141,
+     "y": 1,
+     "w": 63,
+     "h": 67,
+     "ox": -29,
+     "oy": -66
+    },
+    {
+     "x": 211,
+     "y": 1,
+     "w": 68,
+     "h": 69,
+     "ox": -27,
+     "oy": -65
+    }
+   ]
+  },
+  "harry_whip": {
+   "sheet": "harry_whip.png",
+   "sheet_w": 896,
+   "sheet_h": 130,
+   "source": "INIT.PH block 116",
+   "note": "sprite 'hyiwhip'",
+   "frames": [
+    {
+     "x": 1,
+     "y": 1,
+     "w": 89,
+     "h": 57,
+     "ox": -59,
+     "oy": -57
+    },
+    {
+     "x": 113,
+     "y": 1,
+     "w": 61,
+     "h": 63,
+     "ox": -31,
+     "oy": -63
+    },
+    {
+     "x": 225,
+     "y": 1,
+     "w": 110,
+     "h": 61,
+     "ox": -35,
+     "oy": -61
+    },
+    {
+     "x": 337,
+     "y": 1,
+     "w": 49,
+     "h": 51,
+     "ox": -26,
+     "oy": -50
+    },
+    {
+     "x": 449,
+     "y": 1,
+     "w": 56,
+     "h": 51,
+     "ox": -33,
+     "oy": -50
+    },
+    {
+     "x": 561,
+     "y": 1,
+     "w": 52,
+     "h": 56,
+     "ox": -28,
+     "oy": -56
+    },
+    {
+     "x": 673,
+     "y": 1,
+     "w": 43,
+     "h": 59,
+     "ox": -18,
+     "oy": -58
+    },
+    {
+     "x": 785,
+     "y": 1,
+     "w": 39,
+     "h": 55,
+     "ox": -23,
+     "oy": -54
+    },
+    {
+     "x": 1,
+     "y": 66,
+     "w": 55,
+     "h": 55,
+     "ox": -37,
+     "oy": -55
     }
    ]
   },

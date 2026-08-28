@@ -24,12 +24,18 @@ ROOT = Path(__file__).resolve().parent.parent
 GAME = ROOT / "game"
 OUT = ROOT / "web" / "data" / "sprites"
 
-# Banks to ship. INIT.PH holds 81 banks sharing Harry's palette — his whole
-# animation library — but which bank is which action is not decoded yet, so the
-# port ships a small, named-by-observation subset.
-WANTED = [
-    ("harry_a", "INIT.PH", 72, "12 frames, consistent height; used as the walk cycle"),
-    ("harry_b", "INIT.PH", 66, "12 frames; used for the airborne pose"),
+# Banks to ship, resolved by their real names from the sprite registry. The
+# name -> INIT.PH block mapping comes from replaying LoadSprite's call order
+# (see tools/sprite_registry.py); it is validated by all 83 hyi* names landing
+# on Harry-palette banks and none of the other 35 doing so.
+WANTED_NAMED = [
+    ("harry_idle", "hyiready"),
+    ("harry_run", "hyirun"),
+    ("harry_jump", "hyihjump"),
+    ("harry_fall", "hyifall"),
+    ("harry_whip", "hyiwhip"),
+]
+WANTED_BLOCKS = [
     ("font", "INIT.PH", 32, "carved-stone font: A-Z 0-9 punctuation"),
 ]
 
@@ -61,9 +67,22 @@ def pack(bank, out_png, pad=1):
 def main():
     argparse.ArgumentParser().parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
+    from sprite_registry import init_ph_mapping
+    mapping = init_ph_mapping()
+    init = (GAME / "INIT.PH").read_bytes()
+
+    wanted = []
+    for name, sprite_name in WANTED_NAMED:
+        blk = mapping.get(sprite_name)
+        if blk is None:
+            print(f"  {name}: no registry entry for {sprite_name!r} — skipped")
+            continue
+        wanted.append((name, "INIT.PH", blk, f"sprite {sprite_name!r}"))
+    wanted += WANTED_BLOCKS
+
     meta = {}
-    for name, fname, blk, note in WANTED:
-        data = (GAME / fname).read_bytes()
+    for name, fname, blk, note in wanted:
+        data = init if fname == "INIT.PH" else (GAME / fname).read_bytes()
         found = None
         for i, _h, p, s in blocks(data):
             if i == blk and is_bank(data, p, s):
@@ -76,12 +95,13 @@ def main():
         meta[name] = {"sheet": f"{name}.png", "sheet_w": W, "sheet_h": H,
                       "source": f"{fname} block {blk}", "note": note,
                       "frames": rects}
-        print(f"  {name:<9} {fname} blk {blk:<3} {len(rects):>3} frames  {W}x{H}")
+        print(f"  {name:<12} {fname} blk {blk:<3} {len(rects):>3} frames  "
+              f"{W}x{H}   {note}")
 
     (OUT / "sprites.json").write_text(json.dumps({
         "note": ("Frame origins are relative to the sprite's bottom-centre "
-                 "anchor: draw at (anchorX + ox, anchorY + oy). Which bank "
-                 "corresponds to which player action is not decoded yet."),
+                 "anchor: draw at (anchorX + ox, anchorY + oy). Bank names come "
+                 "from the game's own LoadSprite registry."),
         "banks": meta,
     }, indent=1))
     total = sum(f.stat().st_size for f in OUT.iterdir())

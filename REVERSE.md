@@ -323,6 +323,26 @@ Other prefixes name the cast and props: `fx*` effects, `ob*` objects,
 `mi_*` pickups (`mi_gold`, `mi_ring`, `mi_1up`, `mi_time`), plus per-enemy sets
 (`skz*`, `jgu*`, `mkz*`, `tsz*`, `sni*`).
 
+#### Name -> `INIT.PH` block (VERIFIED)
+
+The 646 call sites live in just two functions: **118 in 0x004457D0** and 528 in
+0x00447190. `INIT.PH` holds **118 cleanly decoding sprite banks** (120 carry the
+magic; two are the fonts, which use a different header). Those 118 call sites,
+in address order, pair 1:1 with those 118 banks in file order.
+
+**Validated by a prediction that could have failed**: all **83** `hyi*` names
+land on banks sharing Harry's palette, and **0 of the other 35** do. Confirmed
+visually too — `hyirun` resolves to block 89, which decodes to a ten-frame run
+cycle.
+
+| name | block | | name | block |
+|------|-------|-|------|-------|
+| `hyiready` | 83 | | `hyifall` | 62 |
+| `hyirun` | 89 | | `hyihjump` | 66 |
+| `hyirun2` | 90 | | `hyiwhip` | 116 |
+
+`tools/sprite_registry.py init_ph_mapping()` reproduces the whole table.
+
 **How a name reaches a bank is positional, not by lookup.** The names do not
 appear anywhere in `INIT.PH`. `LoadSprite` opens by incrementing a counter at
 `g_sprite_count` (0x00450520) and storing its `dest` argument into
@@ -687,12 +707,14 @@ remaining work, in dependency order:
       spawn, hitbox change?
 - [x] **Sprite registry extracted** — 646 `LoadSprite(name, &dest)` call sites,
       311 names, and the `hyi*` set names every Harry animation
-- [ ] Bind name -> `INIT.PH` block index. `LoadSprite` registers sequentially
-      into `g_sprite_slots`, so replay the call order of the init path and pair
-      it against the banks in file order, then verify visually (`hyirun` should
-      decode to a run cycle)
-- [ ] Once bound, drive the port's animation from the real banks instead of the
-      observational choice it uses now
+- [x] **Bound name -> `INIT.PH` block** by replaying the init path's call order
+- [x] **The port now animates from the named banks** (`hyiready`, `hyirun`,
+      `hyihjump`, `hyifall`)
+- [ ] Drive cel order and timing from the **animation scripts** rather than
+      cycling a bank's frames at a rate we chose. The scripts hold the real
+      order; `[esi+0x28]` holds the real tick rate
+- [ ] Wire the remaining named states — whip, crouch, climb, rope — to player
+      actions
 - [ ] Render the level entities ("aliens") from their own banks and place them
       from the `.als` records
 - [ ] Extract the movement constants (walk/run speed, jump impulse, gravity)

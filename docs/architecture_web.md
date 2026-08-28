@@ -97,7 +97,9 @@ the picker and the URL hash. The original's screen flow — traced through
 2. ~~**Collision**~~ — done. `js/physics.js` steps a player box at a fixed 60Hz
    against solid cells (bit 12), with per-axis resolution in 1/4-px units so a
    fast step cannot tunnel. Movement constants are provisional.
-3. **Sprites** — partly done. The bank format is decoded and Harry is drawn
-   with the original frame origins. Still to do: map bank -> action from the
-   animation scripts, and place the level entities.
+3. **Sprites** — done for the player. The bank format is decoded, the
+   name -> block binding is recovered from the game's own LoadSprite registry,
+   and Harry animates from `hyiready` / `hyirun` / `hyihjump` / `hyifall`.
+   Still to do: cel order and timing from the animation scripts, the remaining
+   named states, and the level entities.
 4. **Game** — movement constants, triggers (`.trg`), level transitions, scoring.
