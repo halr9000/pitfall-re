@@ -1,7 +1,8 @@
 # Web port — architecture
 
-Status: **stage 2 of 4**. Asset pipeline, multi-layer background renderer and
-player physics are done and deployable. No sprites or entities yet.
+Status: **stage 3 of 4**. Asset pipeline, multi-layer background renderer,
+player physics and Harry's sprite are done and deployable. No entities, no
+animation-state mapping yet.
 
 Plain ES modules, no bundler, no dependencies. Served as static files; deployed
 to GitHub Pages from `web/` by `.github/workflows/pages.yml`.
@@ -25,6 +26,7 @@ web/index.html
 |--------|---------|----------------|
 | `js/level.js` | `loadManifest`, `loadLevel`, `cellAt` | fetch the bundle, composite the background, expose cell lookup |
 | `js/physics.js` | `SOLID_BIT`, `TUNING`, `isSolid`, `boxHits`, `makePlayer`, `findSpawn`, `step`, `px` | player box vs the bit-12 cell grid; 1/4-px fixed point, fixed 60Hz step |
+| `js/sprites.js` | `loadSprites`, `drawFrame` | sprite sheets + frame origins; bottom-centre anchor |
 | `js/main.js` | — | camera, input, frame loop, debug overlays, level picker |
 
 `level.js` holds no DOM state beyond the offscreen canvas it builds; `main.js`
@@ -91,6 +93,7 @@ the picker and the URL hash. The original's screen flow — traced through
 2. ~~**Collision**~~ — done. `js/physics.js` steps a player box at a fixed 60Hz
    against solid cells (bit 12), with per-axis resolution in 1/4-px units so a
    fast step cannot tunnel. Movement constants are provisional.
-3. **Sprites** — decode the `.als` / detail blocks, render Harry and the
-   entities, animate them.
+3. **Sprites** — partly done. The bank format is decoded and Harry is drawn
+   with the original frame origins. Still to do: map bank -> action from the
+   animation scripts, and place the level entities.
 4. **Game** — movement constants, triggers (`.trg`), level transitions, scoring.

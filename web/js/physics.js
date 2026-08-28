@@ -22,8 +22,11 @@ export const TUNING = {
   gravity: 1.4,
   jump: -21,        // ~5.25 px/frame initial rise
   maxFall: 40,
-  boxW: 12,
-  boxH: 28,
+  // Harry's own frames are ~26-32 wide and ~56 tall with the anchor at his
+  // bottom centre, so the box is sized from the sprite rather than invented.
+  // The real collision box may still be narrower than the art.
+  boxW: 16,
+  boxH: 52,
 };
 
 export function isSolid(level, px, py) {

@@ -282,6 +282,59 @@ layer blocks:
 Blocks whose payload begins with **`0x34561234`** are sprite banks — the same
 magic that opens `INIT.PH`. Levels 15's blocks 3-5 are of this kind.
 
+#### Sprite banks — magic `0x34561234` (VERIFIED)
+
+646 of 648 such blocks across all files decode cleanly with this layout; the
+two exceptions are `INIT.PH` blocks 0 and 1, which are fixed-cell fonts
+(64 glyphs of 8x8, 128 of 8x16) using a different header.
+
+| Offset | Type | Name | Notes |
+|--------|------|------|-------|
+| 0x00 | u32 | magic | `0x34561234` |
+| 0x04 | u32 | `pal_off` | block-relative; always `size - ncol*3` |
+| 0x08 | u16 | `ncol` | palette entries |
+| 0x0A | u16 | `nframes` | |
+| 0x0C | u32[] | `frame_offs` | `nframes` block-relative offsets |
+| `frame_offs[i]` | | frame | see below |
+| `pal_off` | u8[3][] | palette | `ncol` RGB triples |
+
+Frame record:
+
+| Offset | Type | Notes |
+|--------|------|-------|
+| 0x00 | s32 | width |
+| 0x04 | s32 | height |
+| 0x08 | s32 | x origin, typically `-w/2` |
+| 0x0C | s32 | y origin, typically `-h` |
+| 0x10 | | RLE rows |
+
+**The anchor is the sprite's bottom centre** — draw at
+`(anchorX + ox, anchorY + oy)`. Frames are tightly cropped to their bounding
+box, which is why sizes vary wildly within one animation.
+
+Row RLE, restarted per row:
+
+| Byte | Meaning |
+|------|---------|
+| `>= 0x80` | emit `b & 0x7F` literal pixels, taken from the following bytes |
+| `< 0x7E` | skip `b` pixels — transparent |
+| `0x7F` | end of row |
+| `0x7E` | end of sprite |
+
+Palette index 0 is transparent, the same convention as `blit_cell_mode0`.
+
+**Verification**: across all 812 frames in `INIT.PH`, the bytes consumed by the
+decoder differ from the span to the next frame offset by **at most 3 bytes**,
+which is 4-byte frame alignment. Visually, `INIT.PH` block 32 decodes to the
+game's carved-stone font (A-Z, 0-9, punctuation) and block 76 to Harry Jr. in
+mid whip-crack.
+
+**`INIT.PH` is Harry's animation library**: 120 sprite banks, of which **81
+share Harry's exact 32-colour palette**. Which bank is which action is not
+decoded — that mapping lives in the animation scripts (blocks 1-4 of each
+level: a uint16 offset table stepping by 3, then `0xFF`-terminated byte
+records).
+
 #### `g_level_assets` — per-level manifest (VERIFIED)
 
 25 entries of 96 bytes at 0x0046F0D8; each entry is six 16-byte NUL-padded
@@ -464,7 +517,11 @@ remaining work, in dependency order:
 - [ ] **Web port performance**: compositing whole levels up front costs 2.8s for
       `forest1` on mobile. Blit only the visible 41x29 cells per frame, the way
       `draw_background` does, instead of pre-flattening the level.
-- [ ] Decode the `.als` sprite blocks; render Harry and the entities
+- [x] **Sprite format decoded** and Harry is drawn in the port
+- [ ] Map bank -> action. Decode the animation scripts in blocks 1-4 so the
+      port knows which of the 81 Harry banks is idle / walk / run / jump / whip
+- [ ] Render the level entities ("aliens") from their own banks and place them
+      from the `.als` records
 - [ ] Extract the movement constants (walk/run speed, jump impulse, gravity)
       from the physics code. The port currently uses invented values; the one
       real datum is that entity positions are **1/4-pixel fixed point**

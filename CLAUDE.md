@@ -55,6 +55,9 @@ precisely so `pypng` is not needed).
 | `render_level.py` | composites cellmap + tiles + palette into `gfx/*.png` |
 | `png.py` | minimal stdlib PNG writer (library) |
 | `export_web.py` | writes the `web/data/` asset bundle for the browser port |
+| `sprite.py` | decodes the `0x34561234` sprite banks; `--scan`, `--list`, `--png` |
+| `export_sprites.py` | writes `web/data/sprites/` for the browser port |
+| `find_cellmap_users.py` | scans .text for pixel-to-cell conversions |
 | `gen_catalog.py` | writes `web/catalog_data.json` for the asset browser |
 
 ## Working rules

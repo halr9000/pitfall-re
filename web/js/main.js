@@ -7,6 +7,7 @@
 
 import { loadManifest, loadLevel, cellAt } from './level.js';
 import { makePlayer, findSpawn, step, px, TUNING, SOLID_BIT } from './physics.js';
+import { loadSprites, drawFrame } from './sprites.js';
 
 const SCREEN_W = 320, SCREEN_H = 224;
 
@@ -35,6 +36,8 @@ const state = {
   fps: 0, frames: 0, fpsAt: 0,
   player: null,
   acc: 0,
+  sprites: null,
+  animT: 0,
 };
 
 // Debug palette for the unresolved cellmap flag nibble.
@@ -124,6 +127,7 @@ function update(dt) {
       step(lv, state.player, input);
       state.acc -= FIXED;
     }
+    if (state.player.vx !== 0 && state.player.onGround) state.animT += dt;
     centreCamera(lv);
     return;
   }
@@ -139,16 +143,37 @@ function update(dt) {
   state.camY = Math.max(0, Math.min(lv.scroll_max_y, state.camY));
 }
 
-// Placeholder player box — there is no decoded sprite yet, so it is drawn as a
-// plain marker rather than pretending to be Harry.
+// Harry, drawn from the decoded sprite banks. The anchor is his bottom centre,
+// matching the frame origins in the original data. Which bank means "walk" or
+// "jump" is not decoded yet, so the choice below is observational.
 function drawPlayer(ox, oy) {
   const p = state.player;
   if (!p) return;
-  const x = Math.round(px(p.x)) - ox, y = Math.round(px(p.y)) - oy;
-  ctx.fillStyle = p.onGround ? '#ffd23c' : '#ff8a3c';
-  ctx.fillRect(x, y, p.w, p.h);
-  ctx.fillStyle = '#14110d';
-  ctx.fillRect(x + (p.facing > 0 ? p.w - 4 : 1), y + 4, 3, 3);
+  const ax = px(p.x) + p.w / 2;      // anchor: bottom centre of the box
+  const ay = px(p.y) + p.h;
+  const S = state.sprites;
+
+  if (!S || !S.harry_a) {            // sprites unavailable: fall back to a box
+    const x = Math.round(px(p.x)) - ox, y = Math.round(px(p.y)) - oy;
+    ctx.fillStyle = p.onGround ? '#ffd23c' : '#ff8a3c';
+    ctx.fillRect(x, y, p.w, p.h);
+    return;
+  }
+
+  let bank = S.harry_a, frame = 0;
+  if (!p.onGround) {
+    bank = S.harry_b || S.harry_a;
+    frame = 3;
+  } else if (p.vx !== 0) {
+    frame = Math.floor(state.animT * 12) % bank.frames.length;
+  }
+  drawFrame(ctx, bank, frame, ax, ay, ox, oy, p.facing < 0);
+
+  if (ui.solid.checked) {           // show the collision box against the art
+    ctx.strokeStyle = '#ffd23c';
+    ctx.strokeRect(Math.round(px(p.x)) - ox + 0.5,
+                   Math.round(px(p.y)) - oy + 0.5, p.w - 1, p.h - 1);
+  }
 }
 
 // The cellmap wraps horizontally (draw_background resets the column index at
@@ -276,6 +301,11 @@ window.__game = state;   // for the headless test harness
       `<code>python3 tools/export_web.py</code>, then serve with ` +
       `<code>python3 -m http.server 8000</code>.`;
     return;
+  }
+  try {
+    state.sprites = await loadSprites();
+  } catch (err) {
+    console.warn('sprites unavailable:', err.message);
   }
   for (const L of state.manifest.levels) {
     const o = document.createElement('option');

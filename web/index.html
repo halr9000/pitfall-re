@@ -75,15 +75,15 @@
     sheet, the cellmap and the palette come out of <code>LEVELnn.PH</code>
     exactly as <code>load_level</code> reads them, and the scroll clamp uses the
     original's own <code>(tiles − viewport) × 16</code> arithmetic.</p>
-    <p>There is <b>no player and no physics yet</b>, but the collision map is
-    now identified. The tile blitter at <code>0x00436B2C</code> proves
-    <b>bit&nbsp;12</b> of each cell selects an opaque blit versus a masked one
-    (palette index 0 transparent), and that bit turns out to trace the solid
-    world: on <code>forest1</code> the tree trunks and ground, on
-    <code>level22</code> the ledges, ramps and poles — with decorative vines
-    and grass excluded. Toggle <b>solid cells</b> to see it. Finding the
-    collision test in the binary, the <b>sprite record format</b> and the
-    <b>movement constants</b> is what remains.</p>
+    <p>Harry walks. The collision map is cell <b>bit&nbsp;12</b> — proven from
+    the tile blitter at <code>0x00436B2C</code> to select an opaque blit, and
+    it traces the solid world. His sprite comes from the
+    <code>0x34561234</code> banks in <code>INIT.PH</code>, drawn with the
+    original frame origins (the anchor is his bottom centre).</p>
+    <p>Not yet decoded: which of the <b>81 Harry banks</b> is idle, walk, run
+    or jump — that mapping lives in the animation scripts — the level
+    <b>entities</b>, the real <b>movement constants</b>, and the per-layer
+    <b>parallax scroll rate</b>. Movement values here are provisional.</p>
   </div>
 </main>
 <script type="module" src="js/main.js"></script>
