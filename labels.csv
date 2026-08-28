@@ -238,3 +238,6 @@
 0x00465B0F,g_player_x,"16-bit pixel X; the listener position for audio distance at 0x00404714"
 0x00426810,move_player_right,"steps g_player_x by 7px, clamped to g_world_max_x"
 0x00404714,sound_distance_atten,"|listener - source| >> 3 clamped to 7, then calls 0x00404DCB"
+0x00401DBC,anim_advance,"animation stepper: ticks [esi+0x29] to [esi+0x28], then reads the next script byte"
+0x004261B0,anim_call,"0xFE handler: argument arrives in 0x00460180 (7 callers of anim_advance)"
+0x00460180,g_scratch_word,"general scratch temp; also carries the 0xFE script argument to anim_call"

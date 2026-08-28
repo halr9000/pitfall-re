@@ -75,3 +75,16 @@ Lifecycle: **Active** -> **Resolved** (prefix with RESOLVED + date once understo
   clamped against the world bounds at 0x00465BAE — find who writes it during
   normal play, not the 7px debug mover at 0x00426810.
 - **Session**: 002
+
+## Animation scripts read as (command, operand) pairs
+- **Tried**: splitting each 0xFF-terminated script record into 2-byte
+  (command, operand) pairs, which fitted LEVEL13's short records neatly.
+- **Failed because**: the opcode histogram across all levels came out flat —
+  roughly 80 distinct "commands" each with ~80 distinct "operands" and similar
+  frequencies. A bytecode has a small opcode set with skewed frequencies; that
+  shape means the split itself was wrong.
+- **Resolved by**: reading `anim_advance` (0x00401DBC). A script is a flat byte
+  stream — each byte under 0xF0 is a frame index, 0xFE takes one argument byte,
+  0xF0 loops, 0xFF ends. The per-frame hold time is an entity field, not script
+  data, which is why no "duration" operand was ever there to find.
+- **Session**: 003

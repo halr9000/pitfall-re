@@ -335,6 +335,73 @@ decoded — that mapping lives in the animation scripts (blocks 1-4 of each
 level: a uint16 offset table stepping by 3, then `0xFF`-terminated byte
 records).
 
+#### Animation scripts — blocks 1-4 (VERIFIED from the interpreter)
+
+Each level's blocks 1-4 that are neither a layer nor a sprite bank hold
+animation scripts:
+
+| Offset | Type | Notes |
+|--------|------|-------|
+| 0x00 | u16[N] | **big-endian** block-relative offsets, 0 = empty slot |
+| … | | the scripts themselves |
+
+N is not stored; the table runs right up to the first script, so
+`N = min(non-zero offset) / 2`. Big-endian is odd on x86 but is what the data
+says — `LEVEL00`'s blocks carry offsets above 255 with the high byte first.
+
+The encoding comes straight from `anim_advance` (0x00401DBC, 7 callers):
+
+```
+inc  byte [esi+0x29]              ; tick++
+cmp  byte [esi+0x29], [esi+0x28]
+jb   ret                          ; hold this frame for [esi+0x28] ticks
+mov  byte [esi+0x29], 0
+next:
+inc  dword [esi+0x14]             ; advance the script pointer
+movzx eax, byte [ebx]
+cmp  al, 0xF0  -> [esi+0x14] = [esi+0x18]   ; loop: rewind to script start
+cmp  al, 0xFE  -> arg = next byte; g_scratch_word = arg;
+                  call anim_call(esi); goto next
+mov  [esi+0x0C], eax              ; anything else IS the frame index
+ret
+```
+
+So a script is a **flat byte stream**, not command/operand pairs:
+
+| Byte | Meaning |
+|------|---------|
+| `< 0xF0` | frame index; shown for `[esi+0x28]` ticks |
+| `0xFE arg` | one-argument side-effect call; does not consume a frame slot |
+| `0xF0` | loop back to the start of the script |
+| `0xFF` | end — the terminator used throughout the data |
+
+The per-frame hold time lives in the **entity**, not the script.
+
+This also pins down part of the entity struct:
+
+| Offset | Field |
+|--------|-------|
+| +0x0C | current frame index |
+| +0x14 | script pointer |
+| +0x18 | script start, used by the loop opcode |
+| +0x28 | ticks per frame |
+| +0x29 | tick counter |
+
+**Verification**: 68 script blocks parse; **60 tile their block exactly with no
+unaccounted bytes**. Totals across all levels: 41,165 frame bytes, 7,602 ends,
+727 `0xFE` calls, 59 loops. `LEVEL13` block 2 reads as 30 slots, 20 used, each
+a short cel list such as `f16 f17 END`.
+
+**Caveat**: 8 blocks leave gaps, and frame bytes as high as 0xF9 appear, so
+there are almost certainly **more control codes in 0xF1..0xFD** that
+`anim_advance` does not handle — a second, larger interpreter sits just above it
+at 0x00401D64..0x00401DAA and tests more values (including 0xF0 with a
+40-dword entity clear). Those are not enumerated yet.
+
+An earlier reading of these scripts as `(command, operand)` pairs was wrong;
+the giveaway was a flat histogram of ~80 "commands" with similar frequencies.
+See `dead_ends.md`.
+
 #### `g_level_assets` — per-level manifest (VERIFIED)
 
 25 entries of 96 bytes at 0x0046F0D8; each entry is six 16-byte NUL-padded
@@ -518,8 +585,15 @@ remaining work, in dependency order:
       `forest1` on mobile. Blit only the visible 41x29 cells per frame, the way
       `draw_background` does, instead of pre-flattening the level.
 - [x] **Sprite format decoded** and Harry is drawn in the port
-- [ ] Map bank -> action. Decode the animation scripts in blocks 1-4 so the
-      port knows which of the 81 Harry banks is idle / walk / run / jump / whip
+- [x] **Animation script format decoded** from the interpreter
+- [ ] Enumerate the remaining control codes in 0xF1..0xFD — read the larger
+      interpreter at 0x00401D64..0x00401DAA. 8 script blocks leave gaps without
+      them
+- [ ] Work out what `anim_call` (0x004261B0) does with its argument — sound,
+      spawn, hitbox change?
+- [ ] Map slot -> sprite bank so the port knows which of the 81 Harry banks is
+      idle / walk / run / jump / whip. The scripts give frame indices; the bank
+      binding is elsewhere (probably the `.als` records)
 - [ ] Render the level entities ("aliens") from their own banks and place them
       from the `.als` records
 - [ ] Extract the movement constants (walk/run speed, jump impulse, gravity)
