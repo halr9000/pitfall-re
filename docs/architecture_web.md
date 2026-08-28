@@ -1,7 +1,7 @@
 # Web port — architecture
 
-Status: **stage 1 of 4**. The asset pipeline and background renderer are done and
-deployable. There is no player, no physics and no sprites yet.
+Status: **stage 2 of 4**. Asset pipeline, multi-layer background renderer and
+player physics are done and deployable. No sprites or entities yet.
 
 Plain ES modules, no bundler, no dependencies. Served as static files; deployed
 to GitHub Pages from `web/` by `.github/workflows/pages.yml`.
@@ -13,12 +13,18 @@ web/index.html
   └── js/main.js          (entry, ES module)
         ├── loadManifest  ─┐
         ├── loadLevel      ├── js/level.js
-        └── cellAt        ─┘
+        ├── cellAt        ─┘
+        ├── makePlayer    ─┐
+        ├── findSpawn      │
+        ├── step           ├── js/physics.js
+        ├── px, TUNING     │
+        └── SOLID_BIT     ─┘
 ```
 
 | Module | Exports | Responsibility |
 |--------|---------|----------------|
 | `js/level.js` | `loadManifest`, `loadLevel`, `cellAt` | fetch the bundle, composite the background, expose cell lookup |
+| `js/physics.js` | `SOLID_BIT`, `TUNING`, `isSolid`, `boxHits`, `makePlayer`, `findSpawn`, `step`, `px` | player box vs the bit-12 cell grid; 1/4-px fixed point, fixed 60Hz step |
 | `js/main.js` | — | camera, input, frame loop, debug overlays, level picker |
 
 `level.js` holds no DOM state beyond the offscreen canvas it builds; `main.js`
@@ -82,8 +88,9 @@ the picker and the URL hash. The original's screen flow — traced through
 
 ## Remaining stages
 
-2. **Collision** — resolve the cellmap flag nibble, add `js/physics.js`, and give
-   the camera a player box that stands on the floor.
+2. ~~**Collision**~~ — done. `js/physics.js` steps a player box at a fixed 60Hz
+   against solid cells (bit 12), with per-axis resolution in 1/4-px units so a
+   fast step cannot tunnel. Movement constants are provisional.
 3. **Sprites** — decode the `.als` / detail blocks, render Harry and the
    entities, animate them.
 4. **Game** — movement constants, triggers (`.trg`), level transitions, scoring.

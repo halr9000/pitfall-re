@@ -393,8 +393,10 @@ has to serve it.
       zero unaccounted bytes and `max cell index == tile count − 1` everywhere
 - [ ] Ph6: full game session played, no major logic gaps found
 - [ ] Ph7: web port pixel-compared against the original
-      (stage 1 done: backgrounds composite and scroll in-browser at 320x224,
-      verified in headless Chromium; no player or physics yet)
+      (stage 1: backgrounds composite and scroll at 320x224, multi-layer, the
+      title screen renders correctly; stage 2: a player box walks, jumps and
+      collides against the bit-12 map. Both verified in headless Chromium.
+      Sprites, movement constants and entities still missing.)
 
 ---
 
@@ -438,7 +440,13 @@ has to serve it.
 Stage 1 (background renderer + asset pipeline + Pages deploy) is done. The
 remaining work, in dependency order:
 
-- [ ] **Collision.** Draw-mode bits are resolved; the collision source is not.
+- [x] **Collision map identified** — cell bit 12. A player box now walks,
+      jumps and collides against it in the web port, which is itself the
+      strongest test: it stands on the drawn ground on every level tried, walks
+      the full expected distance on open terrain (271.5px in 3s at 1.5px/frame
+      on `level22`) and is stopped by tree trunks on `forest1`.
+- [ ] **Find the collision test in the binary** to turn the bit-12 reading from
+      inference into proof.
       See the elimination table under Data Structures. Next: search for sign
       tests on a 16-bit load (`movsx` + `js`, `cmp word [...],0` + `jl`) rather
       than mask tests, since bit 15 is the cell word's sign bit. Then add
@@ -458,7 +466,12 @@ remaining work, in dependency order:
       `draw_background` does, instead of pre-flattening the level.
 - [ ] Decode the `.als` sprite blocks; render Harry and the entities
 - [ ] Extract the movement constants (walk/run speed, jump impulse, gravity)
-      from the physics code
+      from the physics code. The port currently uses invented values; the one
+      real datum is that entity positions are **1/4-pixel fixed point**
+      (`sar eax, 2` in the alien update at 0x004426E0), which `physics.js`
+      already matches.
+- [ ] Find the real player spawn point per level — the port picks the first
+      surface with a walkable run, which is a heuristic, not the game's data
 - [ ] Decode the `.trg` trigger blocks — level transitions, hazards, pickups
 - [ ] Wire the state machine from `load_level`'s 16 callers so levels connect
 

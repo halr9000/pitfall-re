@@ -6,6 +6,7 @@
 // reverse-engineered before there is a game here.
 
 import { loadManifest, loadLevel, cellAt } from './level.js';
+import { makePlayer, findSpawn, step, px, TUNING, SOLID_BIT } from './physics.js';
 
 const SCREEN_W = 320, SCREEN_H = 224;
 
@@ -21,6 +22,7 @@ const ui = {
   solid: document.getElementById('solid'),
   grid: document.getElementById('grid'),
   probe: document.getElementById('probe'),
+  play: document.getElementById('play'),
 };
 
 const state = {
@@ -31,6 +33,8 @@ const state = {
   keys: new Set(),
   mouse: null,
   fps: 0, frames: 0, fpsAt: 0,
+  player: null,
+  acc: 0,
 };
 
 // Debug palette for the unresolved cellmap flag nibble.
@@ -77,6 +81,8 @@ async function select(n) {
   try {
     const lv = await loadLevel(entry);
     state.level = lv;
+    const sp = findSpawn(lv);
+    state.player = makePlayer(sp.x, sp.y);
     state.camX = state.camY = 0;
     ui.status.textContent = '';
     const stack = lv.layers.map((L, i) =>
@@ -93,9 +99,35 @@ async function select(n) {
   }
 }
 
+const FIXED = 1 / 60;
+
+function centreCamera(lv) {
+  const p = state.player;
+  state.camX = Math.max(0, Math.min(lv.scroll_max_x, px(p.x) + p.w / 2 - SCREEN_W / 2));
+  state.camY = Math.max(0, Math.min(lv.scroll_max_y, px(p.y) + p.h / 2 - SCREEN_H / 2));
+}
+
 function update(dt) {
   const lv = state.level;
   if (!lv) return;
+
+  if (ui.play.checked && state.player) {
+    // fixed 60Hz steps so physics does not vary with frame rate
+    state.acc = Math.min(state.acc + dt, 0.25);
+    const input = {
+      left: held('ArrowLeft', 'a'),
+      right: held('ArrowRight', 'd'),
+      jump: held(' ', 'ArrowUp', 'w'),
+      run: held('Shift'),
+    };
+    while (state.acc >= FIXED) {
+      step(lv, state.player, input);
+      state.acc -= FIXED;
+    }
+    centreCamera(lv);
+    return;
+  }
+
   const boost = held('Shift') ? 4 : 1;
   const v = state.speed * boost * dt * 60;
   if (held('ArrowLeft', 'a')) state.camX -= v;
@@ -105,6 +137,18 @@ function update(dt) {
   // The original clamps to (tiles - viewport) * 16; mirror that exactly.
   state.camX = Math.max(0, Math.min(lv.scroll_max_x, state.camX));
   state.camY = Math.max(0, Math.min(lv.scroll_max_y, state.camY));
+}
+
+// Placeholder player box — there is no decoded sprite yet, so it is drawn as a
+// plain marker rather than pretending to be Harry.
+function drawPlayer(ox, oy) {
+  const p = state.player;
+  if (!p) return;
+  const x = Math.round(px(p.x)) - ox, y = Math.round(px(p.y)) - oy;
+  ctx.fillStyle = p.onGround ? '#ffd23c' : '#ff8a3c';
+  ctx.fillRect(x, y, p.w, p.h);
+  ctx.fillStyle = '#14110d';
+  ctx.fillRect(x + (p.facing > 0 ? p.w - 4 : 1), y + 4, 3, 3);
 }
 
 // The cellmap wraps horizontally (draw_background resets the column index at
@@ -142,9 +186,7 @@ function drawFlags(lv, ox, oy) {
 // trunks and ground mass, on level22 the ledges, ramps and poles, while
 // decorative vines and grass stay unmarked. The collision *test* has not been
 // found in the binary yet, so treating solid == bit 12 is inference, not proof.
-// See REVERSE.md.
-const SOLID_BIT = 0x1000;
-
+// See REVERSE.md. SOLID_BIT is imported from physics.js.
 function drawSolid(lv, ox, oy) {
   const L = lv.layers[0];
   const c0 = ox >> 3, c1 = Math.min(L.cell_w - 1, (ox + SCREEN_W) >> 3);
@@ -184,6 +226,7 @@ function render() {
   if (ui.solid.checked) drawSolid(lv, ox, oy);
   if (ui.flags.checked) drawFlags(lv, ox, oy);
   if (ui.grid.checked) drawGrid(ox, oy);
+  if (ui.play.checked) drawPlayer(ox, oy);
 
   if (state.mouse) {
     const px = ox + state.mouse.x, py = oy + state.mouse.y;
@@ -193,6 +236,13 @@ function render() {
       `word 0x${v.toString(16).padStart(4, '0')}  ` +
       `tile ${v & 0xfff}  flags 0x${(v >> 12).toString(16).toUpperCase()}  ` +
       `${v & SOLID_BIT ? 'SOLID' : 'open'}`;
+  } else if (ui.play.checked && state.player) {
+    const p = state.player;
+    ui.probe.textContent =
+      `player ${px(p.x).toFixed(2)},${px(p.y).toFixed(2)}  ` +
+      `vel ${px(p.vx).toFixed(2)},${px(p.vy).toFixed(2)}  ` +
+      `${p.onGround ? 'on ground' : 'airborne'}  ` +
+      `box ${p.w}x${p.h}  camera ${ox},${oy}`;
   } else {
     ui.probe.textContent = `camera ${ox},${oy} / ${lv.scroll_max_x},${lv.scroll_max_y}`;
   }
@@ -213,6 +263,8 @@ function frame(now) {
   }
   requestAnimationFrame(frame);
 }
+
+window.__game = state;   // for the headless test harness
 
 (async function boot() {
   try {

@@ -52,6 +52,7 @@
 <main>
   <div class="bar">
     <label>level <select id="level"></select></label>
+    <label><input type="checkbox" id="play" checked> play mode</label>
     <label><input type="checkbox" id="solid"> solid cells (bit 12)</label>
     <label><input type="checkbox" id="flags"> flag nibbles</label>
     <label><input type="checkbox" id="grid"> 16px tile grid</label>
@@ -62,8 +63,10 @@
   <div class="stage"><canvas id="screen" width="320" height="224"></canvas></div>
   <div class="readout"><span id="probe"></span></div>
   <p style="color:var(--dim)">
-    <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> or <kbd>WASD</kbd> scroll ·
-    <kbd>Shift</kbd> faster · hover the screen to probe a cell
+    <b>play mode</b>: <kbd>←</kbd><kbd>→</kbd> walk · <kbd>Shift</kbd> run ·
+    <kbd>Space</kbd> jump &nbsp;·&nbsp; <b>free camera</b> (play mode off):
+    <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> or <kbd>WASD</kbd> scroll,
+    hover to probe a cell
   </p>
 
   <div class="note">
