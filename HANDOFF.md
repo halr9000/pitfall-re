@@ -55,11 +55,23 @@ sessions — the human runs it, the agent never invokes it.
 
 Source: https://www.myabandonware.com/game/pitfall-the-mayan-adventure-876#download
 
-Pick the **Windows** entry. The package this project was developed against is
-`PitfallTheMayanAdventure_Win_EN_RIPVersion.zip` — the "RIP" build, meaning
-audio and video were stripped. That matters: the EXE references 200+
+That page offers exactly three relevant downloads. Take the first one:
+
+| Section | Entry | Size | |
+|---------|-------|------|--|
+| Windows Version | **RIP Version**, English | **4 MB** | ← **this one** |
+| Windows Version | ISO Version, English | 541 MB | not this |
+| Game Extras | Fix: Fixed `wail32.dll`, English | 41 KB | optional, audio only |
+
+The file is `PitfallTheMayanAdventure_Win_EN_RIPVersion.zip` (~3.9 MB). "RIP"
+means audio and video were stripped. That matters: the EXE references 200+
 `SOUNDxx.WAV` files and the `.AVI` cutscenes that are simply absent, so don't
-treat their absence as a decoding failure.
+read their absence as a decoding failure. The 541 MB ISO is widely reported as
+broken and is not what this project used.
+
+The `wail32.dll` fix under Game Extras exists because the RIP build has no
+sound. Irrelevant to reverse engineering — noted only so you don't wonder what
+it is.
 
 Verify you have the same bytes:
 
@@ -75,9 +87,13 @@ Every address in this document and in `labels.csv` is relative to that exact
 different language — will not line up, and nothing will tell you except that
 the disassembly stops making sense.
 
-I could not fetch the direct download URL: the domain is blocked by this
-environment's network egress proxy. The package name above is the identifier to
-look for on that page.
+**On fetching that page yourself.** `curl` and `WebFetch` both fail —
+`myabandonware.com` is blocked by the sandbox's network egress proxy. The
+**Tavily MCP tools** (`tavily_extract`, `tavily_search`) fetch server-side and
+do reach it; that is how the table above was read. Tavily strips `href`
+attributes, though, so a direct download URL is not obtainable by any route
+available here. The size and label above are the reliable identifiers, and they
+are more durable than a URL on that site anyway.
 
 ## Getting running in five minutes
 
